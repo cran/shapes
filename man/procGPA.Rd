@@ -2,14 +2,14 @@
 \alias{procGPA}
 %- Also NEED an `\alias' for EACH other topic documented here.
 \title{Generalised Procrustes analysis}
-\description{Generalised Procrustes analysis to register geometrical 
-  objects into optimal registration using translation, 
-  rotation and scaling. Reflection invariance can also be chosen, and
-registration without scaling is also an option. Also, obtains principal 
-  components, and some summary statistics. 
+\description{Generalised Procrustes analysis to register landmark configurations into optimal registration using translation, 
+rotation and scaling. Reflection invariance can also be chosen, and registration without scaling is also an option. Also, obtains principal 
+components, and some summary statistics. 
 }
 \usage{
-procGPA(x, scale = TRUE, reflect = FALSE, tol1 = 1e-05, tol2 = 1e-05)
+procGPA(x, scale = TRUE, reflect = FALSE, eigen2d = TRUE, 
+tol1 = 1e-05, tol2 = tol1, approxtangent = TRUE, proc.output=FALSE, 
+distances=TRUE, pcaoutput=TRUE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -19,38 +19,52 @@ is the number of dimensions, and n is the sample size. }
   \item{scale}{Logical quantity indicating if scaling is required}
   \item{reflect}{Logical quantity indicating if reflection 
   is required}
-  \item{tol1}{Tolerance for optimal rotation for the iterative 
-algorithm: tolerance on the mean sum of squares between successive iterations 
-(depends on scale of objects)}
+  \item{eigen2d}{Logical quantity indicating if complex eigenanalysis 
+  should be used to calculate Procrustes mean for 2D case when 
+  scale=TRUE, reflect=FALSE} 
+   \item{tol1}{Tolerance for optimal rotation for the iterative 
+algorithm: tolerance on the mean sum of squares 
+(divided by size of mean squared) between successive iterations}
   \item{tol2}{tolerance for rescale/rotation step for the iterative 
-algorithm: tolerance on the Riemannian shape distance 
-between successive mean shapes}
+algorithm: tolerance on the mean sum of squares 
+(divided by size of mean squared) between successive iterations}
+\item{approxtangent}{Logical quantity indicating if the approximate tangent 
+coordinates (Procrustes residuals) should be given if TRUE, or the partial 
+tangent coordinates (see tan below) if FALSE}
+\item{proc.output}{Logical quantity indicating if printed output during the
+iterations of the Procrustes GPA algorithm should be given} 
+\item{distances}{Logical quantity indicating if shape distances and sizes 
+should be calculated}
+\item{pcaoutput}{Logical quantity indicating if PCA should be carried out} 
 }
 \value{A list with components
 \item{k}{no of landmarks}
 \item{m}{no of dimensions (m-D dimension configurations)}
 \item{n}{sample size}
-\item{mshape}{full Procrustes mean shape} 
-\item{tan}{the real mk x n matrix of full Procrustes tangent coordinates
- $X_i^P$ - Xbar , where Xbar = mean($X_i^P$)}
-\item{rotated}{the k x m x n array of real full Procrustes 
+\item{mshape}{Procrustes mean shape. Note this is unit size if complex 
+eigenanalysis used, but on the scale of the data if iterative GPA is used.} 
+\item{tan}{If approxtangent=TRUE this is the mk x n matrix of 
+Procrustes APPROXIMATE tangent coordinates $X_i^P$ - Xbar , where Xbar = mean($X_i^P$), which are also known as the 
+Procrustes residuals. If approxtangent=FALSE this is 
+the km-m x n matrix of partial Procrustes tangent coordinates
+with pole given by the preshape of the Procrustes mean}
+\item{rotated}{the k x m x n array of full Procrustes 
 rotated data} 
 \item{pcar}{the columns are eigenvectors (PCs) of the sample 
-covariance Sv of tan}
-\item{pcasd}{the square roots of eigenvalues of Sv (s.d.'s of PCs)}
-\item{percent}{the percentage of variability explained by the PCs}
+covariance Sv of tan} 
+\item{pcasd}{the square roots of eigenvalues of Sv using tan (s.d.'s of PCs)}
+\item{percent}{the percentage of variability explained by the PCs using
+tan}
 \item{size}{the centroid sizes of the configurations}
-\item{scores}{standardised PC scores (each with unit variance)} 
-\item{rawscores}{raw PC scores} 
-\item{rho}{Kendall's Procrustean (Riemannian) distance rho 
-to the mean shape}
+\item{scores}{standardised PC scores (each with unit variance) using 
+tan} 
+\item{rawscores}{raw PC scores using tan} 
+\item{rho}{Kendall's Riemannian distance $\rho$ to the mean shape}
 \item{rmsrho}{r.m.s. of rho} 
-\item{rmsd1}{r.m.s. of full Procrustes distances 
-to the mean shape d1}
+\item{rmsd1}{r.m.s. of full Procrustes distances to the mean shape dF}
 }
-
-\references{Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester. 
+\references{Dryden, I.L. and Mardia, K.V. (1998). Statistical 
+Shape Analysis, Wiley, Chichester. 
  
 Goodall, C.R. (1991). Procrustes methods in the statistical analysis 
 of shape (with discussion). Journal of the Royal Statistical Society, 
@@ -61,7 +75,7 @@ Gower, J.C. (1975). Generalized Procrustes analysis, Psychometrika, 40, 33--50.}
 Kent, J.T. (1994). The complex Bingham distribution and shape analysis,
 Journal of the Royal Statistical Society, Series B, 56, 285-299.}
 
-\author{Ian Dryden}
+\author{Ian Dryden, with input from Mohammad Faghihi and Alfred Kume}
 \seealso{procOPA,riemdist,shapepca,testmeanshapes}
 
 
@@ -96,21 +110,15 @@ pairs(x,panel=function(x,y) text(x,y,gor.gp),
 ##########################################################
 #3D example
 
-data(dna.dat)
-subsetobs<-c(1:10)
-subsetk<-c(1,3,5,7,9,11,12,14,16,18,20,22)
-dna<-procGPA(dna.dat[subsetk,,subsetobs],tol1=0.1)
+data(macm.dat)
+out<-procGPA(macm.dat)
 
 par(mfrow=c(2,2))
-plot(dna$rawscores[,1],dna$rawscores[,2],type="l",xlab="PC1",ylab="PC2")
-points(dna$rawscores[1,1],dna$rawscores[1,2])
-title("PC scores - joined up through time")
-plot(dna$rawscores[,2],dna$rawscores[,3],type="l",xlab="PC2",ylab="PC3")
-points(dna$rawscores[1,2],dna$rawscores[1,3])
-plot(dna$rawscores[,1],dna$rawscores[,3],type="l",xlab="PC1",ylab="PC3")
-points(dna$rawscores[1,1],dna$rawscores[1,3])
-plot(dna$size,dna$rho,xlab="size",ylab="rho",type="l")
-points(dna$size[1],dna$rho[1])
+plot(out$rawscores[,1],out$rawscores[,2],xlab="PC1",ylab="PC2")
+title("PC scores")
+plot(out$rawscores[,2],out$rawscores[,3],xlab="PC2",ylab="PC3")
+plot(out$rawscores[,1],out$rawscores[,3],xlab="PC1",ylab="PC3")
+plot(out$size,out$rho,xlab="size",ylab="rho")
 title("Size versus shape distance")
 
 }

@@ -32,6 +32,7 @@
 \alias{dif} 
 \alias{dif.old} 
 \alias{dis} 
+\alias{dna.dat}
 \alias{fJ} 
 \alias{fcel} 
 \alias{fcnt} 
@@ -72,6 +73,7 @@
 \alias{partialwarps} 
 \alias{plot2rwscores} 
 \alias{plot3Ddata} 
+\alias{plot3Ddata.static}
 \alias{plot3Dmean} 
 \alias{plot3Dpca} 
 \alias{plotPDM} 

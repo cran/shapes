@@ -41,5 +41,35 @@ B<-digit3.dat[,,2]
 ans<-procOPA(A,B) 
 plotshapes(A,B,joinline=1:13)
 plotshapes(ans$Ahat,ans$Bhat,joinline=1:13)
+
+#Sooty Mangabey data
+data(sooty.dat)
+A<-sooty.dat[,,1]   #juvenile
+B<-sooty.dat[,,2]   #adult
+par(pty="s")
+plot(A,xlim=c(-2000,3000),ylim=c(-2000,3000))
+lines(A[c(1:12,1),])
+points(B)
+lines(B[c(1:12,1),],lty=2)
+#match B onto A
+out<-procOPA(A,B)
+#rotation angle
+print(atan2(out$R[1,2],out$R[1,1])*180/pi)
+#scale
+print(out$s)
+plot(A,xlim=c(-2000,3000),ylim=c(-2000,3000))
+lines(A[c(1:12,1),])
+points(out$Bhat)
+lines(out$Bhat[c(1:12,1),],lty=2)
+#match A onto B
+out<-procOPA(B,A)
+#rotation angle
+print(atan2(out$R[1,2],out$R[1,1])*180/pi)
+#scale
+print(out$s)
+plot(B,xlim=c(-2000,3000),ylim=c(-2000,3000))
+lines(B[c(1:12,1),],lty=2)
+points(out$Bhat)
+lines(out$Bhat[c(1:12,1),])
 }
 \keyword{multivariate}

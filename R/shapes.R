@@ -4,7 +4,7 @@
 # written by Ian Dryden - suitable for use in R or S-Plus
 # (c) Ian Dryden, University of Nottingham, 2000-2003
 #   
-#          Version 1.0  13/9/03   
+#          Version 1.0-2  30/10/03   
 #
 #----------------------------------------------------------------------
 #
@@ -34,7 +34,8 @@ prcomp1<-function (x, retx = TRUE, center = TRUE, scale. = FALSE, tol = NULL)
     r
 }
 
-
+# if using Splus
+# prcomp1<-prcomp
 
 defplotsize<-function(x){
 out<-list(xl=0,yl=0,width=0)
@@ -120,12 +121,9 @@ out$width<-width*1.2
 out
 }
 
-plotshapes<-function(A,B=0,joinline=c(1,1)){
+plotshapes<-function(A,B=0,joinline=c(1,1),orthproj=c(1,2)){
 k<-dim(A)[1]
 m<-dim(A)[2]
-if (m != 2){
-cat("Error ! need 2D data \n")
-}
 par(pty="s")
 if (length(c(B))==1){
 par(mfrow=c(1,1))
@@ -133,24 +131,28 @@ par(mfrow=c(1,1))
 if (length(c(B))!=1){
 par(mfrow=c(1,2))
 }
-if (m ==2){
-
+if (length(dim(A))==3){  
+A<-A[,orthproj,]
+}
 if (is.matrix(A)==TRUE){
 a<-array(0,c(k,2,1))
-a[,,1]<-A
+a[,,1]<-A[,orthproj]
 A<-a
 }
 out<-defplotsize2(A)
 width<-out$width
 if (length(c(B))!=1){
+if (length(dim(B))==3){ 
+B<-B[,orthproj,]
+}
 if (is.matrix(B)==TRUE){
 a<-array(0,c(k,2,1))
-a[,,1]<-B
+a[,,1]<-B[,orthproj]
 B<-a
 }
 ans<-defplotsize2(B)
 width<-max(out$width,ans$width)
-}
+} 
 n<-dim(A)[3]
 plot(A[,,1],xlim=c(out$xl,out$xl+width),ylim=c(out$yl,
 out$yl+width),type="n",xlab=" ",ylab=" ")
@@ -175,7 +177,8 @@ lines(A[joinline,,i])
 }
 }
 }
-}
+
+
 
 
 
@@ -197,6 +200,10 @@ BoxM<-function(A, B, npc)
 	n2 <- dim(B)[3]
 	k <- dim(A)[1]
 	m <- dim(A)[2]
+if (m > 2){
+print("Only works for 2D data at the moment!")
+}
+if (m == 2){
 	C <- array(0, c(k, m, n1 + n2))
 	C[,  , 1:n1] <- A
 	C[,  , (n1 + 1):(n1 + n2)] <- B
@@ -220,7 +227,8 @@ BoxM<-function(A, B, npc)
 	pval <- 1 - pchisq(M, df)
 	z$M <- M
 	z$df <- df
-	z$pval <- pval
+	z$pval <- pval 
+}
 	return(z)
 }
 Goodall2D<-function(A, B)
@@ -278,34 +286,29 @@ Goodalltest<-function(A, B,tol1=1e-05,tol2=1e-05)
         z$df2 <- (n1 + n2 - 2) * p
         return(z)
 }
-Hotelling2D<-function(A, B)
+
+Hotelling2D<-function (A, B) 
 {
-#Calculates two sample Hotelling Tsq test for testing whether 
-#mean shapes are equal (2 D only)
-#in: A, B the k x 2 x n arrays of data for each group
-#out: z$F : F-statistic
-#     z$df1, z$df2 : degrees of freedom
-#     z$pval: pvalue
-        z <- list(Tsq.partition = 0, Tsq = 0, F.partition = 0, F = 0, pval = 0, 
-                df1 = 0, df2 = 0, T.df1 = 0, T.df2 = 0)
-        n1 <- dim(A)[3]
-        n2 <- dim(B)[3]
-        n <- n1 + n2
-        k <- dim(A)[1]
-        m <- dim(B)[2]
-        if(m != 2) {
-                print("Data not two dimensional")
-                return(z)
-        }
-else {
+    z <- list(Tsq.partition = 0, Tsq = 0, F.partition = 0, F = 0, 
+        pval = 0, df1 = 0, df2 = 0, T.df1 = 0, T.df2 = 0)
+    n1 <- dim(A)[3]
+    n2 <- dim(B)[3]
+    n <- n1 + n2
+    k <- dim(A)[1]
+    m <- dim(B)[2]
+    if (m != 2) {
+        print("Data not two dimensional")
+        return(z)
+    }
+    else {
         pool <- array(0, c(k, m, n))
-        pool[,  , 1:n1] <- A
-        pool[,  , (n1 + 1):n] <- B
+        pool[, , 1:n1] <- A
+        pool[, , (n1 + 1):n] <- B
         poolpr <- procrustes2d(pool, 1, 2)
         S1 <- var(t(poolpr$tan[, 1:n1]))
         S2 <- var(t(poolpr$tan[, (n1 + 1):(n1 + n2)]))
         gamma <- realtocomplex(preshape(poolpr$mshape))
-         Sw <- ((n1 - 1) * S1 + (n2 - 1) * S2)/(n1 + n2 - 2)
+        Sw <- ((n1 - 1) * S1 + (n2 - 1) * S2)/(n1 + n2 - 2)
         p <- 2 * k - 4
         pcar <- eigen(Sw)$vectors[, 1:p]
         pcasd <- sqrt(eigen(Sw)$values[1:p])
@@ -319,12 +322,12 @@ else {
         realrot <- t(H) %*% pcar
         one1 <- matrix(1/n1, n1, 1)
         one2 <- matrix(1/n2, n2, 1)
-        oneone <- rbind(one1,  - one2)
+        oneone <- rbind(one1, -one2)
         vbar <- poolpr$tan %*% oneone
         scores1 <- matrix(vbar, 1, (2 * k - 2)) %*% pcar
         scores <- scores1/pcasd
-        F.partition <- ((scores[1:p]^2) * (n1 * n2 * (n1 + n2 - p - 1)))/((n1 + 
-                n2) * (n1 + n2 - 2) * p)
+        F.partition <- ((scores[1:p]^2) * (n1 * n2 * (n1 + n2 - 
+            p - 1)))/((n1 + n2) * (n1 + n2 - 2) * p)
         FF <- sum(F.partition)
         pval <- 1 - pf(FF, p, (n1 + n2 - p - 1))
         z$F.partition <- F.partition
@@ -335,67 +338,128 @@ else {
         z$df2 <- (n1 + n2 - p - 1)
         mm <- n - 2
         z$T.df2 <- mm
-        z$Tsq <- (FF * (mm * p))/(mm - p + 1)
-        z$Tsq.partition <- (F.partition * (mm * p))/(mm - p + 1)
-        return(z)
+        z$Tsq <- FF * (n1+n2)*(n1+n2-2)*p/(n1*n2)/(n1+n2-p-1)
+    z$Tsq.partition <- F.partition * (n1+n2)*(n1+n2-2)*p/(n1*n2)/(n1+n2-p-1)
+    return(z)
+    }
 }
-}
- Hotellingtest<-function(A, B, tol1=1e-05,tol2=1e-05)
+
+
+
+Hotellingtest<-function (A, B, tol1 = 1e-05, tol2 = 1e-05) 
 {
+    z <- list(Tsq.partition = 0, Tsq = 0, F.partition = 0, F = 0, 
+        pval = 0, df1 = 0, df2 = 0, T.df1 = 0, T.df2 = 0)
+    n1 <- dim(A)[3]
+    n2 <- dim(B)[3]
+    n <- n1 + n2
+    k <- dim(A)[1]
+    m <- dim(B)[2]
+    pool <- array(0, c(k, m, n))
+    pool[, , 1:n1] <- A
+    pool[, , (n1 + 1):n] <- B
+    poolpr <- procrustesGPA(pool, tol1, tol2,approxtangent=FALSE)
+    S1 <- var(t(poolpr$tan[, 1:n1]))
+    S2 <- var(t(poolpr$tan[, (n1 + 1):(n1 + n2)]))
+    Sw <- ((n1 - 1) * S1 + (n2 - 1) * S2)/(n1 + n2 - 2)
+    p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+    eva<-eigen(Sw,symmetric=TRUE)
+    pcar <- eva$vectors[, 1:p]
+    pcasd <- sqrt(eva$values[1:p])
+    lam<-rep(0,times=(k*m-m))
+    lam[1:p]<-1/pcasd**2
+    Suinv<-eva$vectors%*%diag(lam)%*%t(eva$vectors)
+#    check <- p
+#    for (i in 1:p) {
+#        if (pcasd[p + 1 - i] < 1e-04) {
+#            check <- p + 1 - i - 1
+#        }
+#    }
+#    p <- check
+    pcax <- t(poolpr$tan) %*% pcar
+    one1 <- matrix(1/n1, n1, 1)
+    one2 <- matrix(1/n2, n2, 1)
+    oneone <- rbind(one1, -one2)
+    vbar <- poolpr$tan %*% oneone
+    scores1 <- matrix(vbar, 1, m * k-m ) %*% pcar
+    scores <- scores1/pcasd
+#    tem<-c(t(vbar)%*%Suinv%*%vbar)  #(=Dsq)#
+    F.partition <- ((scores[1:p]^2) * (n1 * n2 * (n1 + n2 - p - 
+        1)))/((n1 + n2) * (n1 + n2 - 2) * p)
+    FF <- sum(F.partition)
+    pval <- 1 - pf(FF, p, (n1 + n2 - p - 1))
+    z$F.partition <- F.partition
+    z$F <- FF
+    z$pval <- pval
+    z$df1 <- p
+    z$T.df1 <- p
+    z$df2 <- (n1 + n2 - p - 1)
+    mm <- n - 2
+    z$T.df2 <- mm
+    z$Tsq <- FF * (n1+n2)*(n1+n2-2)*p/(n1*n2)/(n1+n2-p-1)
+    z$Tsq.partition <- F.partition * (n1+n2)*(n1+n2-2)*p/(n1*n2)/(n1+n2-p-1)
+    return(z)
+}
+
+
+
+# Hotellingtest<-function(A, B, tol1=1e-05,tol2=1e-05)
+# OLD VERSION using $tan rather than $tanpartial
+#{
 #Calculates two sample Hotelling Tsq test for testing whether 
 #mean shapes are equal (m - Dimensions where m >= 2)
 #in: A, B the k x m x n arrays of data for each group
 #out: z$F : F-statistic
 #     z$df1, z$df2 : dgrees of freedom
 #     z$pval: pvalue
-        z <- list(Tsq.partition = 0, Tsq = 0, F.partition = 0, F = 0, pval = 0, 
-                df1 = 0, df2 = 0, T.df1 = 0, T.df2 = 0)
-        n1 <- dim(A)[3]
-        n2 <- dim(B)[3]
-        n <- n1 + n2
-        k <- dim(A)[1]
-        m <- dim(B)[2]
-        pool <- array(0, c(k, m, n))
-        pool[,  , 1:n1] <- A
-        pool[,  , (n1 + 1):n] <- B
-        poolpr <- procrustesGPA(pool,tol1,tol2)
-        S1 <- var(t(poolpr$tan[, 1:n1]))
-        S2 <- var(t(poolpr$tan[, (n1 + 1):(n1 + n2)]))
-        Sw <- ((n1 - 1) * S1 + (n2 - 1) * S2)/(n1 + n2 - 2)
-        p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
-        pcar <- eigen(Sw)$vectors[, 1:p]
-        pcasd <- sqrt(eigen(Sw)$values[1:p])
-        check<-p
-# checks to see if rank is reasonable
-        for (i in 1:p){
-        if (pcasd[p+1-i] < 0.0001){
-        check<-p+1-i-1
-        }
-        }
-        p<-check
-        pcax <- t(poolpr$tan) %*% pcar
-        one1 <- matrix(1/n1, n1, 1)
-        one2 <- matrix(1/n2, n2, 1)
-        oneone <- rbind(one1,  - one2)
-        vbar <- poolpr$tan %*% oneone
-        scores1 <- matrix(vbar, 1, m*k) %*% pcar
-        scores <- scores1/pcasd
-        F.partition <- ((scores[1:p]^2) * (n1 * n2 * (n1 + n2 - p - 1)))/((n1 + 
-                n2) * (n1 + n2 - 2) * p)
-        FF <- sum(F.partition)
-        pval <- 1 - pf(FF, p, (n1 + n2 - p - 1))
-        z$F.partition <- F.partition
-        z$F <- FF
-        z$pval <- pval
-        z$df1 <- p
-        z$T.df1 <- p
-        z$df2 <- (n1 + n2 - p - 1)
-        mm <- n - 2
-        z$T.df2 <- mm
-        z$Tsq <- (FF * (mm * p))/(mm - p + 1)
-        z$Tsq.partition <- (F.partition * (mm * p))/(mm - p + 1)
-        return(z)
-}
+#        z <- list(Tsq.partition = 0, Tsq = 0, F.partition = 0, F = 0, pval = 0, 
+#                df1 = 0, df2 = 0, T.df1 = 0, T.df2 = 0)
+#        n1 <- dim(A)[3]
+#        n2 <- dim(B)[3]
+#        n <- n1 + n2
+#        k <- dim(A)[1]
+#        m <- dim(B)[2]
+#        pool <- array(0, c(k, m, n))
+#        pool[,  , 1:n1] <- A
+#        pool[,  , (n1 + 1):n] <- B
+#        poolpr <- procrustesGPA(pool,tol1,tol2)
+#        S1 <- var(t(poolpr$tan[, 1:n1]))
+#        S2 <- var(t(poolpr$tan[, (n1 + 1):(n1 + n2)]))
+#        Sw <- ((n1 - 1) * S1 + (n2 - 1) * S2)/(n1 + n2 - 2)
+#        p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+#        pcar <- eigen(Sw)$vectors[, 1:p]
+#        pcasd <- sqrt(eigen(Sw)$values[1:p])
+#        check<-p
+## checks to see if rank is reasonable
+#        for (i in 1:p){
+#        if (pcasd[p+1-i] < 0.0001){
+#        check<-p+1-i-1
+#        }
+#        }
+#        p<-check
+#        pcax <- t(poolpr$tan) %*% pcar
+#        one1 <- matrix(1/n1, n1, 1)
+#        one2 <- matrix(1/n2, n2, 1)
+#        oneone <- rbind(one1,  - one2)
+#        vbar <- poolpr$tan %*% oneone
+#        scores1 <- matrix(vbar, 1, m*k) %*% pcar
+#        scores <- scores1/pcasd
+#        F.partition <- ((scores[1:p]^2) * (n1 * n2 * (n1 + n2 - p - 1)))/((n1 + 
+#                n2) * (n1 + n2 - 2) * p)
+#        FF <- sum(F.partition)
+#        pval <- 1 - pf(FF, p, (n1 + n2 - p - 1))
+#        z$F.partition <- F.partition
+#        z$F <- FF
+#        z$pval <- pval
+#        z$df1 <- p
+#        z$T.df1 <- p
+#        z$df2 <- (n1 + n2 - p - 1)
+#        mm <- n - 2
+#        z$T.df2 <- mm
+#        z$Tsq <- (FF * (mm * p))/(mm - p + 1)
+#        z$Tsq.partition <- (F.partition * (mm * p))/(mm - p + 1)
+#        return(z)
+#}
 
 
 I2mat<-function(Be)
@@ -1166,15 +1230,15 @@ width<-out$width
 plotpca(proc, pcno, type, mag, xl, yl, width, joinline)
 }
 if (m==3){
-out<-defplotsize3(proc$rotated)
-xl<-out$xl
-yl<-out$yl
-width<-out$width
-plot3Dmean(proc,xl=xl,xu=(xl+width),yl=yl,yu=(yl+width))
+#out<-defplotsize3(proc$rotated)
+#xl<-out$xl
+#yl<-out$yl
+#width<-out$width
+plot3Dmean(proc)
 cat("Mean shape \n")
 for (i in 1:length(pcno)){
 cat("PC ",pcno[i]," \n")
-plot3Dpca(proc,pcno[i],xl=xl,xu=(xl+width),yl=yl,yu=(yl+width))
+plot3Dpca(proc,pcno[i])
 }
 }
 }
@@ -1183,7 +1247,7 @@ plot3Dpca(proc,pcno[i],xl=xl,xu=(xl+width),yl=yl,yu=(yl+width))
 
 
 
-plotpca<-function(proc, pcno, type, mag, xl, yl, width, joinline)
+plotpca<-function(proc, pcno, type, mag, xl, yl, width, joinline=c(1,1))
 {
 #provides PC plots of the Procrustes rotated objects in proc
 #proc is an S object of the type output from the function procrustes2d
@@ -1201,14 +1265,20 @@ plotpca<-function(proc, pcno, type, mag, xl, yl, width, joinline)
 #width = width (and height) of the square plotting region
 #joinline = vector of landmark numbers which are joined up in the plot by 
 #straight lines: joinline = c(1,1) will give no lines
-# 
+#
 	k <- proc$k
 	zero <- matrix(0, k - 1, k)
 	h <- defh(k - 1)
 	H <- cbind(h, zero)
 	H1 <- cbind(zero, h)
 	H <- rbind(H, H1)
+	# if preshape vector then convert to configuration space
+	if (dim(proc$pcar)[1]==(2*(k-1))){
 	pcarot <- t(H) %*% proc$pcar
+	}
+	if (dim(proc$pcar)[1]==(2*k)){
+	pcarot <- proc$pcar
+	}	
 	par(pty = "s")
 	par(lty = 1)
 	meanxy <- c(proc$mshape[, 1], proc$mshape[, 2])
@@ -1635,7 +1705,7 @@ procdistreflect<-function(x, y)
 	riem<-acos(min(sum(ev),1))
 	riem
 }
-procrustes2d<-function(x, l1=1, l2=2)
+procrustes2d<-function(x, l1=1, l2=2, approxtangent=FALSE)
 {
 #input k x 2 x n real array, or k x n complex matrix
 #mean shape will have landmarks l1, l2 horizontal (l1 left, l2 right)
@@ -1657,8 +1727,15 @@ procrustes2d<-function(x, l1=1, l2=2)
 # z$rmsrho : r.m.s. of rho 
 # z$rmsd1 : r.m.s. of full Procrustes distances to the mean shape d1
 #
-	z <- list(k = 0, m = 0, n = 0, tan = 0, rotated = 0, pcar = 0, scores
-		 = 0, rawscores=0, pcasd = 0, percent = 0, size = 0, rho = 0, rmsrho = 0, 
+	z <- list(k = 0, m = 0, n = 0, 
+	rotated = 0, 
+	tan = 0, 
+	pcar = 0, 
+	scores= 0, 
+	rawscores=0, 
+	pcasd = 0,  
+	percent = 0, 
+		 size = 0, rho = 0, rmsrho = 0, 
 		rmsd1 = 0, mshape = 0)
 	if(is.complex(x) == FALSE) {
 		x <- x[, 1,  ] + (1i) * x[, 2,  ]
@@ -1675,21 +1752,37 @@ procrustes2d<-function(x, l1=1, l2=2)
 	gamma <- h %*% cbmeanrot
 	tan <- project(zp, gamma)
 	icon <- array(0, c(k, 2, n))
+	tanapprox<-matrix(0,2*k,n)
 	size <- rep(0, times = n)
 	rho <- rep(0, times = n)
+	mu<-complextoreal(cbmeanrot)
+	sum<-0
 	for(i in 1:n) {
 		tem <- tantofigurefull(tan[, i], gamma)
 		icon[, 1, i] <- Re(tem)
 		icon[, 2, i] <- Im(tem)
+		sum<-sum+icon[,,i]
 		size[i] <- centroid.size(x[, i])
 		rho[i] <- riemdist(x[, i], c(cbmeanrot))
 	}
+	xbar<-sum/n
+
 	rv <- Vmat(tan)
+	if (approxtangent==TRUE){
+	for (i in 1:n){
+	tanapprox[,i]<-as.vector(icon[,,i])-as.vector(xbar)
+	}
+	tanapprox<-tanapprox/centroid.size(xbar)
+	pca <- prcomp1(t(tanapprox))
+	z$tan<-tanapprox
+	} 
+	if (approxtangent==FALSE){
 	pca <- prcomp1(t(rv))
+	z$tan<-rv
+	}
 	z$pcar <- pca$rotation
 	z$pcasd <- pca$sdev
 	z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
-	z$tan <- rv
 	z$rotated <- icon
 	npc <- 0
 	for(i in 1:length(pca$sdev)) {
@@ -1697,14 +1790,14 @@ procrustes2d<-function(x, l1=1, l2=2)
 			npc <- npc + 1
 		}
 	}
-	z$scores <- pca$x
-	z$rawscores <- pca$x
-	for(i in 1:npc) {
-		z$scores[, i] <- pca$x[, i]/pca$sdev[i]
-	}
+     z$scores <- pca$x
+     z$rawscores <- pca$x
+	for (i in 1:npc) {
+        z$scores[, i] <- pca$x[, i]/pca$sdev[i]
+    }
 	z$rho <- rho
 	z$size <- size
-	z$mshape <- complextoreal(cbmeanrot)
+	z$mshape <- mu
 	z$k <- k
 	z$m <- 2
 	z$n <- n
@@ -1751,36 +1844,11 @@ test
 
 
 
-procGPA<-function(x,scale=TRUE,reflect=FALSE,tol1=1e-05,tol2=1e-05)
+procGPA<-function(x,scale=TRUE,reflect=FALSE,eigen2d=TRUE,
+tol1=1e-05,tol2=tol1,approxtangent=TRUE,proc.output=FALSE,distances=TRUE,pcaoutput=TRUE)
 {
-#input k x m x n real array, (or k x n complex matrix for m=2 is OK)
 #
-# tol1: GPA tolerance1 which stops the rotation iterations if
-#       (meanSS before - meanSS after) < tol1 
-#       NB: depends on scale of measurements
-# 
-# tol2: GPA tolerance2 which stops the whole procedure (at iteration i+1)
-#       Riemannian shape distance(mean shape at i,mean shape at i+1) < tol2 
-#       
 #
-#output:
-# z$k : no of landmarks
-# z$m : no of dimensions (m=2) here
-# z$n : sample size
-# z$tan : the real mk x n matrix of full Procrustes tangent coordinates
-#            X<-i^P - Xbar , where Xbar = mean(X<-i^P)
-# z$rotated : the k x m x n array of real full Procrustes rotated data 
-# z$pcar : the columns are eigenvectors (PCs) of the sample covariance Sv of z$tan
-# z$pcasd : the square roots of eigenvalues of Sv (s.d.'s of PCs)
-# z$percent : the % of variability explained by the PCs
-# z$size : the centroid sizes of the configurations
-# z$scores : PC scores normalised to have unit variance
-# z$rawscores : PC scores (unnormalised)
-# z$rho : Kendall's Procrustean (Riemannian) distance rho to the mean shape
-# z$rmsrho : r.m.s. of rho 
-# z$rmsd1 : r.m.s. of full Procrustes distances to the mean shape d1
-#
-
 	if(is.complex(x)) {
 		tem <- array(0, c(nrow(x), 2, ncol(x)))
 		tem[, 1,  ] <- Re(x)
@@ -1791,23 +1859,34 @@ procGPA<-function(x,scale=TRUE,reflect=FALSE,tol1=1e-05,tol2=1e-05)
 if (reflect==FALSE){
 fort<-fort.ROTATION
 if ((m == 2)&&(scale==TRUE)){
-out<-procrustes2d(x)
+if (eigen2d==TRUE){
+out<-procrustes2d(x,approxtangent=approxtangent)
+}
+else
+{
+out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,proc.output=proc.output,
+distances=distances,pcaoutput=pcaoutput)
+}                 
 }
 if ((m > 2)&&(scale==TRUE)){
-out<-procrustesGPA(x,tol1,tol2)
+out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,proc.output=proc.output
+,distances=distances,pcaoutput=pcaoutput)
 }
 if (scale==FALSE){
-out<-procrustesGPA.rot(x,tol1,tol2)
+out<-procrustesGPA.rot(x,tol1,tol2,approxtangent=approxtangent,
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput)
 }
 }
 if (reflect==TRUE){
 #print("Include reflection invariance")
 fort<-fort.ROTATEANDREFLECT
 if (scale==TRUE){
-out<-procrustesGPA(x,tol1,tol2)
+out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput)
 }
 if (scale==FALSE){
-out<-procrustesGPA.rot(x,tol1,tol2)
+out<-procrustesGPA.rot(x,tol1,tol2,approxtangent=approxtangent,
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput)
 }
 }
 fort<-fort.ROTATION
@@ -1815,167 +1894,179 @@ out
 }
 
 
-procrustesGPA<-function(x,tol1=1e-05,tol2=1e-05)
+procrustesGPA<-function (x, tol1 = 1e-05, tol2 = 1e-05,distances=TRUE,pcaoutput=TRUE,
+approxtangent=TRUE,proc.output=FALSE) 
 {
-#input k x m x n real array, (or k x n complex matrix for m=2 is OK)
-#
-#output:
-# z$k : no of landmarks
-# z$m : no of dimensions (m=2) here
-# z$n : sample size
-# z$tan : the real mk x n matrix of full Procrustes tangent coordinates
-#            X<-i^P - Xbar , where Xbar = mean(X<-i^P)
-# z$rotated : the k x m x n array of real full Procrustes rotated data 
-# z$pcar : the columns are eigenvectors (PCs) of the sample covariance Sv of z$tan
-# z$pcasd : the square roots of eigenvalues of Sv (s.d.'s of PCs)
-# z$percent : the % of variability explained by the PCs
-# z$size : the centroid sizes of the configurations
-# z$scores : PC scores normalised to have unit variance
-# z$rawscores : PC scores (unnormalised)
-# z$rho : Kendall's Procrustean (Riemannian) distance rho to the mean shape
-# z$rmsrho : r.m.s. of rho 
-# z$rmsd1 : r.m.s. of full Procrustes distances to the mean shape d1
-#
-	z <- list(k = 0, m = 0, n = 0, tan = 0, rotated = 0, pcar = 0, scores
-		 = 0, rawscores =0, pcasd = 0, percent = 0, size = 0, rho = 0, rmsrho = 0, 
+	z <- list(k = 0, m = 0, n = 0, 
+	rotated = 0, 
+	tan = 0, 
+	pcar = 0, 
+	scores= 0, 
+	rawscores=0, 
+	pcasd = 0,  
+	percent = 0, 
+		 size = 0, rho = 0, rmsrho = 0, 
 		rmsd1 = 0, mshape = 0)
-	if(is.complex(x)) {
-		tem <- array(0, c(nrow(x), 2, ncol(x)))
-		tem[, 1,  ] <- Re(x)
-		tem[, 2,  ] <- Im(x)
-		x <- tem
-	}
-#	print("GPA (rotation and scale)")
-	k <- dim(x)[1]
-	m <- dim(x)[2]
-	n <- dim(x)[3]
-	zgpa <- fgpa(x, tol1,tol2)
-	tan <- zgpa$r.s.r[, 1,  ] - zgpa$mshape[, 1]
-	for(i in 2:m) {
-		tan <- rbind(tan, zgpa$r.s.r[, i,  ] - zgpa$mshape[, i])
-	}
-	size <- rep(0, times = n)
-	rho <- rep(0, times = n)
-#	for(i in 1:n) {
-#		size[i] <- centroid.size(x[,  , i])
-#		rho[i] <- riemdist(x[,  , i], zgpa$mshape)
-#	}
-
-        size<-apply(x,3,centroid.size)
-	rho<-apply(x,3,y<-function(x) {riemdist(x,zgpa$mshape)})
-	
-	pca <- prcomp1(t(tan))
-	npc <- 0
-	for(i in 1:length(pca$sdev)) {
-		if(pca$sdev[i] > 1e-07) {
-			npc <- npc + 1
-		}
-	}
-	z$scores <- pca$x
-	z$rawscores <- pca$x
-	for(i in 1:npc) {
-		z$scores[, i] <- pca$x[, i]/pca$sdev[i]
-	}
-	z$rotated <- zgpa$r.s.r
-	z$tan <- tan
-	z$pcar <- pca$rotation
-	z$pcasd <- pca$sdev
-	z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
-	z$rho <- rho
-	z$size <- size
-	z$mshape <- zgpa$mshape
-	z$k <- k
-	z$m <- m
-	z$n <- n
-	z$rmsrho <- sqrt(mean(rho^2))
-	z$rmsd1 <- sqrt(mean(sin(rho)^2))
-	return(z)
+    if (is.complex(x)) {
+        tem <- array(0, c(nrow(x), 2, ncol(x)))
+        tem[, 1, ] <- Re(x)
+        tem[, 2, ] <- Im(x)
+        x <- tem
+    }
+    k <- dim(x)[1]
+    m <- dim(x)[2]
+    n <- dim(x)[3]
+    x<-cnt3(x)
+    zgpa <- fgpa(x, tol1, tol2,proc.output=proc.output)
+    if (pcaoutput==TRUE){
+    if (proc.output){cat("PCA calculation ...\n")}
+    tanpartial <- matrix(0, k * m - m, n)
+    ident <- diag(rep(1, times = (m * k - m)))
+    gamma <- as.vector(preshape(zgpa$mshape))
+    for (i in 1:n) {
+        tanpartial[, i] <- (ident - gamma %*% t(gamma)) %*% 
+        as.vector(preshape(zgpa$r.s.r[, , i]))
+    }
+    tan <- zgpa$r.s.r[, 1, ] - zgpa$mshape[, 1]
+    for (i in 2:m) {
+        tan <- rbind(tan, zgpa$r.s.r[, i, ] - zgpa$mshape[, i])
+    }
+    if (approxtangent==FALSE){
+    pca <- prcomp1(t(tanpartial))
+    z$tan <- tanpartial
+    }
+    if (approxtangent==TRUE){
+    pca<-prcomp1(t(tan))
+    z$tan <- tan
+    }
+    npc <- 0
+    for (i in 1:length(pca$sdev)) {
+        if (pca$sdev[i] > 1e-07) {
+            npc <- npc + 1
+        }
+    }
+    z$scores <- pca$x
+    z$rawscores <- pca$x
+    for (i in 1:npc) {
+        z$scores[, i] <- pca$x[, i]/pca$sdev[i]
+    }
+    z$pcar <- pca$rotation
+    z$pcasd <- pca$sdev
+    z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
+    }
+    if (distances == TRUE) {
+    if (proc.output){cat("Shape distances and sizes calculation ...\n")}
+    size <- rep(0, times = n)
+    rho <- rep(0, times = n)
+    size <- apply(x, 3, centroid.size)
+    rho <- apply(x, 3, y <- function(x) {
+        riemdist(x, zgpa$mshape)
+    })
+               if (proc.output){cat("Finished.\n")}
+    z$rho <- rho
+    z$size <- size
+    z$rmsrho <- sqrt(mean(rho^2))
+    z$rmsd1 <- sqrt(mean(sin(rho)^2))
+    }
+    
+    z$rotated <- zgpa$r.s.r    
+    z$mshape <- zgpa$mshape
+    z$k <- k
+    z$m <- m
+    z$n <- n
+    return(z)
 }
 
 
-
-procrustesGPA.rot<-function(x,tol1=1e-05,tol2=1e-05,distances=TRUE)
+procrustesGPA.rot<-function (x, tol1 = 1e-05, tol2 = 1e-05, distances = TRUE, 
+pcaoutput=TRUE, approxtangent=TRUE,proc.output=FALSE) 
 {
-#PROCRUSTES WITHOUT SCALING - JUST ROTATION/TRANSLATION
-#input k x m x n real array, (or k x n complex matrix for m=2 is OK)
-#
-#output:
-# z$k : no of landmarks
-# z$m : no of dimensions (m=2) here
-# z$n : sample size
-# z$tan : the real mk x n matrix of full Procrustes tangent coordinates
-#            X<-i^P - Xbar , where Xbar = mean(X<-i^P)
-# z$rotated : the k x m x n array of real full Procrustes rotated data 
-# z$pcar : the columns are eigenvectors (PCs) of the sample covariance Sv of z$tan
-# z$pcasd : the square roots of eigenvalues of Sv (s.d.'s of PCs)
-# z$percent : the % of variability explained by the PCs
-# z$size : the centroid sizes of the configurations
-# z$scores : PC scores normalised to have unit variance
-# z$rawscores : PC scores (unnormalised)
-# z$rho : Kendall's Procrustean (Riemannian) distance rho to the mean shape
-# z$rmsrho : r.m.s. of rho 
-# z$rmsd1 : r.m.s. of full Procrustes distances to the mean shape d1
-#
-	z <- list(k = 0, m = 0, n = 0, tan = 0, rotated = 0, pcar = 0, scores
-		 = 0, rawscores =0, pcasd = 0, percent = 0, size = 0, rho = 0, rmsrho = 0, 
+	z <- list(k = 0, m = 0, n = 0, 
+	rotated = 0, 
+tan = 0, 
+pcar = 0, 
+scores= 0, 
+rawscores=0, 
+pcasd = 0,  
+percent = 0, 
+		 size = 0, rho = 0, rmsrho = 0, 
 		rmsd1 = 0, mshape = 0)
-	if(is.complex(x)) {
-		tem <- array(0, c(nrow(x), 2, ncol(x)))
-		tem[, 1,  ] <- Re(x)
-		tem[, 2,  ] <- Im(x)
-		x <- tem
-	}
-	k <- dim(x)[1]
-	m <- dim(x)[2]
-	n <- dim(x)[3]
-	print("GPA (rotation only)")
-	zgpa <- fgpa.rot(x, tol1,tol2)
-	tan <- zgpa$r.s.r[, 1,  ] - zgpa$mshape[, 1]
-	for(i in 2:m) {
-		tan <- rbind(tan, zgpa$r.s.r[, i,  ] - zgpa$mshape[, i])
-	}
-	size <- rep(0, times = n)
-	rho <- rep(0, times = n)
-	if (distances==TRUE){
-#	for(i in 1:n) {
-#		size[i] <- centroid.size(x[,  , i])
-#		rho[i] <- riemdist(x[,  , i], zgpa$mshape)
-#	}
-#		for(i in 1:n) {
-#		size[i] <- centroid.size(x[,  , i])
-#		rho[i] <- 2*asin(norm(zgpa$r.s.r[,,i]/centroid.size
-#		(zgpa$r.s.r[,,i])- zgpa$mshape/centroid.size(zgpa$mshape))/2)
-#	}
-        size<-apply(x,3,centroid.size)
-        rho<-apply(x,3,y<-function(x) {riemdist(x,zgpa$mshape)})
-        } 
-	pca <- prcomp1(t(tan))
-	npc <- 0
-	for(i in 1:length(pca$sdev)) {
-		if(pca$sdev[i] > 1e-07) {
-			npc <- npc + 1
-		}
-	}
-	z$scores <- pca$x
-	z$rawscores <- pca$x
-	for(i in 1:npc) {
-		z$scores[, i] <- pca$x[, i]/pca$sdev[i]
-	}
-	z$rotated <- zgpa$r.s.r
-	z$tan <- tan
-	z$pcar <- pca$rotation
-	z$pcasd <- pca$sdev
-	z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
-	z$rho <- rho
-	z$size <- size
-	z$mshape <- zgpa$mshape
-	z$k <- k
-	z$m <- m
-	z$n <- n
-	z$rmsrho <- sqrt(mean(rho^2))
-	z$rmsd1 <- sqrt(mean(sin(rho)^2))
-	return(z)
+    if (is.complex(x)) {
+        tem <- array(0, c(nrow(x), 2, ncol(x)))
+        tem[, 1, ] <- Re(x)
+        tem[, 2, ] <- Im(x)
+        x <- tem
+    }
+    k <- dim(x)[1]
+    m <- dim(x)[2]
+    n <- dim(x)[3]
+#    print("GPA (rotation only)")
+    zgpa <- fgpa.rot(x, tol1, tol2,proc.output=proc.output)
+    tanpartial <- matrix(0, k * m - m, n)
+    
+  if (pcaoutput==TRUE){
+      if (proc.output){cat("PCA calculation ...\n")}
+    ident <- diag(rep(1, times = (m * k - m)))
+    gamma <- as.vector(preshape(zgpa$mshape))
+    for (i in 1:n) {
+        tanpartial[, i] <- (ident - gamma %*% t(gamma)) %*% 
+        as.vector(preshape(zgpa$r.s.r[, , i]))
+    }
+    tan <- zgpa$r.s.r[, 1, ] - zgpa$mshape[, 1]
+    for (i in 2:m) {
+        tan <- rbind(tan, zgpa$r.s.r[, i, ] - zgpa$mshape[, i])
+    }
+
+        if (approxtangent==FALSE){
+    pca <- prcomp1(t(tanpartial))
+    z$tan <- tanpartial
+    }
+    if (approxtangent==TRUE){
+    pca<-prcomp1(t(tan))
+    z$tan <- tan
+    }
+    npc <- 0
+    for (i in 1:length(pca$sdev)) {
+        if (pca$sdev[i] > 1e-07) {
+            npc <- npc + 1
+        }
+    }
+    
+    z$scores <- pca$x
+    z$rawscores <- pca$x
+    for (i in 1:npc) {
+        z$scores[, i] <- pca$x[, i]/pca$sdev[i]
+    }
+
+    z$pcar <- pca$rotation
+    z$pcasd <- pca$sdev
+    z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
+    }
+
+    if (distances == TRUE) {
+       if (proc.output){cat("Shape distances and sizes calculation ...\n")}
+        size <- rep(0, times = n)
+        rho <- rep(0, times = n)
+        size <- apply(x, 3, centroid.size)
+        rho <- apply(x, 3, y <- function(x) {
+            riemdist(x, zgpa$mshape)
+        })
+           if (proc.output){cat("Finished.\n")}
+    z$rho <- rho
+    z$size <- size
+    z$rmsrho <- sqrt(mean(rho^2))
+    z$rmsd1 <- sqrt(mean(sin(rho)^2))
+    } 
+    z$rotated <- zgpa$r.s.r
+    z$mshape <- zgpa$mshape
+    z$k <- k
+    z$m <- m
+    z$n <- n
+
+    return(z)
 }
+
+
 
 
 project<-function(z, gamma)
@@ -2249,7 +2340,16 @@ tantopreshape<-function(vv, gamma)
 	z <- c((1 - st(vv) %*% vv)^0.5) * gamma + vv
 	z
 }
-plot3Ddata<-function(dna.data,land=1:k,objects=1:n,xl=0,xu=50,yl=0,yu=50){
+plot3Ddata<-function(dna.data,land=1:k,objects=1:n,joinline=c(1,1)){
+dna<-procGPA(dna.data[,,1:2])
+w1<-defplotsize2(dna.data[,1:2,])
+w2<-defplotsize2(dna.data[,c(1,3),])
+w3<-defplotsize2(dna.data[,c(2,3),])
+width<-max(c(w1$width,w2$width,w3$width))
+xl<-min(c(w1$xl,w2$xl,w3$xl))
+xu<-xl+width
+yl<-min(c(w1$yl,w2$yl,w3$yl))
+yu<-yl+width
 n<-dim(dna.data)[3]
 k<-dim(dna.data)[1]
 m<-dim(dna.data)[2]
@@ -2258,7 +2358,7 @@ par(pty="s")
 view1<-1
 view2<-2
 view3<-3
-lineorder<-c(1:k,1)
+lineorder<-joinline
 for (j in 1:1){
 for (ii in objects){
 par(mfrow=c(2,2))
@@ -2283,8 +2383,75 @@ title(as.character(ii))
 }
 }
 
-plot3Dmean<-function(dna,xl=-20,xu=20,yl=-20,yu=20){
+plot3Ddata.static<-function(dna.data,land=1:k,objects=1:n,joinline=c(1,1)){
+dna<-procGPA(dna.data[,,1:2])
+w1<-defplotsize2(dna.data[,1:2,])
+w2<-defplotsize2(dna.data[,c(1,3),])
+w3<-defplotsize2(dna.data[,c(2,3),])
+width<-max(c(w1$width,w2$width,w3$width))
+xl<-min(c(w1$xl,w2$xl,w3$xl))
+xu<-xl+width
+yl<-min(c(w1$yl,w2$yl,w3$yl))
+yu<-yl+width
+n<-dim(dna.data)[3]
+k<-dim(dna.data)[1]
+m<-dim(dna.data)[2]
+par(mfrow=c(1,1))
+par(pty="s")
+
+lineorder<-joinline
+
+par(mfrow=c(2,2))
+mag<-0
+pcno<-1
+ii<-1
+view1<-1
+view2<-2
+view3<-3
+plotPDMnoaxis3(c(dna.data[land,view1,ii],dna.data[land,view2,ii]),
+c(dna$pcar[((view1-1)*k+(land)),pcno],dna$pcar[((view2-1)*k+(land)),pcno]),
+mag*dna$pcasd[pcno],xl,xu,yl,yu,lineorder,1)
+for (ii in objects){
+pointsPDMnoaxis3(c(dna.data[land,view1,ii],dna.data[land,view2,ii]),
+c(dna$pcar[((view1-1)*k+(land)),pcno],dna$pcar[((view2-1)*k+(land)),pcno]),
+mag*dna$pcasd[pcno],xl,xu,yl,yu,lineorder,1)
+}
+view1<-1
+view2<-3
+view3<-2
+plotPDMnoaxis3(c(dna.data[land,view1,ii],dna.data[land,view2,ii]),
+c(dna$pcar[((view1-1)*k+(land)),pcno],dna$pcar[((view2-1)*k+(land)),pcno]),
+mag*dna$pcasd[pcno],xl,xu,yl,yu,lineorder,1)
+for (ii in objects){
+pointsPDMnoaxis3(c(dna.data[land,view1,ii],dna.data[land,view2,ii]),
+c(dna$pcar[((view1-1)*k+(land)),pcno],dna$pcar[((view2-1)*k+(land)),pcno]),
+mag*dna$pcasd[pcno],xl,xu,yl,yu,lineorder,1)
+}
+view1<-2
+view2<-3
+view3<-1
+plotPDMnoaxis3(c(dna.data[land,view1,ii],dna.data[land,view2,ii]),
+c(dna$pcar[((view1-1)*k+(land)),pcno],dna$pcar[((view2-1)*k+(land)),pcno]),
+mag*dna$pcasd[pcno],xl,xu,yl,yu,lineorder,1)
+for (ii in objects){
+pointsPDMnoaxis3(c(dna.data[land,view1,ii],dna.data[land,view2,ii]),
+c(dna$pcar[((view1-1)*k+(land)),pcno],dna$pcar[((view2-1)*k+(land)),pcno]),
+mag*dna$pcasd[pcno],xl,xu,yl,yu,lineorder,1)
+}
+
+
+}
+
+plot3Dmean<-function(dna){
 land<-1:dim(dna$mshape)[1]
+w1<-defplotsize2(dna$rotated[,1:2,])
+w2<-defplotsize2(dna$rotated[,c(1,3),])
+w3<-defplotsize2(dna$rotated[,c(2,3),])
+width<-max(c(w1$width,w2$width,w3$width))
+xl<-min(c(w1$xl,w2$xl,w3$xl))
+xu<-xl+width
+yl<-min(c(w1$yl,w2$yl,w3$yl))
+yu<-yl+width
 par(mfrow=c(2,2))
 par(pty="s")
 plot(dna$mshape[land,1],dna$mshape[land,2],xlim=c(xl,xu),ylim=c(yl,yu),xlab=" ",ylab=" ")
@@ -2299,10 +2466,18 @@ lines(dna$mshape[land,2],dna$mshape[land,3])
 title("Procrustes mean shape estimate")
 }
 
-plot3Dpca<-function(dna,pcno,xl=-30,xu=30,yl=-30,yu=30){
+plot3Dpca<-function(dna,pcno,joinline=c(1,1)){
 #choose subset
+w1<-defplotsize2(dna$rotated[,1:2,])
+w2<-defplotsize2(dna$rotated[,c(1,3),])
+w3<-defplotsize2(dna$rotated[,c(2,3),])
+width<-max(c(w1$width,w2$width,w3$width))
+xl<-min(c(w1$xl,w2$xl,w3$xl))-width/4
+xu<-xl+width*1.5
+yl<-min(c(w1$yl,w2$yl,w3$yl))-width/4
+yu<-yl+width*1.5
 k<-dim(dna$mshape)[1]
-lineorder<-c(1:k)
+lineorder<-joinline
 par(mfrow=c(1,1))
 cat("X-Y view \n")
 view1<-1
@@ -2965,15 +3140,171 @@ dna.dat<-aperm(dna.dat,c(2,1,3))
 
 
 
+macf.dat<-c(54.33203,24.10905,69.5
+,141.80250,21.59643,69.5
+,132.23880,62.78124,69.5
+,88.22106,52.28123,69.5
+,147.10890,26.61518,90.0
+,107.42800,27.77578,101.0
+,99.74427,46.85715,97.0
+,58.35540,29.57223,67.0
+,134.87930,26.38988,67.0
+,120.57150,66.43083,67.0
+,79.14922,52.19386,67.0
+,138.17850,37.67144,86.0
+,101.76780,34.47324,97.5
+,90.83484,54.19082,92.0
+,50.04349,15.22191,71.5
+,139.76850,21.33820,71.5
+,124.26710,63.79000,71.5
+,80.94720,51.47673,71.5
+,147.78980,32.26446,94.0
+,102.32870,25.23133,105.5
+,90.64163,47.04449,98.5
+,41.93115,24.83244,70.5
+,138.72930,22.35828,70.5
+,122.68840,65.04043,70.5
+,74.09913,53.69709,70.5
+,142.63240,35.36625,92.0
+,97.04822,33.37946,111.5
+,89.51760,56.40900,96.5
+,48.44877,35.75250,68.0
+,134.68970,33.55962,68.0
+,120.88830,73.77755,68.0
+,77.94841,65.53058,68.0
+,135.42950,42.75692,91.0
+,101.92880,40.64505,99.5
+,87.04530,59.04715,92.5
+,44.05272,36.38397,70.0
+,133.47320,45.07240,70.0
+,114.88450,83.74655,70.0
+,70.13158,71.71946,70.0
+,139.94810,54.24338,87.0
+,97.87708,47.19924,105.5
+,80.04594,65.13947,96.5
+,53.94042,32.50219,69.0
+,136.19530,33.46588,69.0
+,120.75410,74.12678,69.0
+,78.24210,60.88469,69.0
+,142.38210,44.35960,89.5
+,100.75480,38.09180,101.0
+,87.92361,55.80280,94.5
+,45.11740,11.62884,68.5
+,132.08950,17.75877,68.5
+,112.66980,57.22899,68.5
+,71.76939,47.64127,68.5
+,136.93780,26.69818,88.5
+,96.43125,21.78416,101.0
+,84.39475,41.89694,95.0
+,42.09966,16.11359,69.0
+,131.92440,19.70687,69.0
+,121.73400,57.71608,69.0
+,72.94730,49.99466,69.0
+,136.93340,26.92302,89.0
+,96.84825,26.58288,103.0
+,84.30907,48.96717,94.5)
+macf.dat<-array(macf.dat,c(3,7,9))
+macf.dat<-aperm(macf.dat,c(2,1,3))
+macm.dat<-c(34.82811,16.50834,77.5
+,138.91980,15.13858,77.5
+,125.15760,58.60464,77.5
+,72.28854,49.79207,77.5
+,146.19080,22.68885,100.0
+,99.30268,24.86908,117.0
+,91.79910,46.49960,107.0
+,40.40179,3.73932,73.0
+,132.23560,7.56574,73.0
+,114.63210,53.28955,73.0
+,70.66502,33.57051,73.0
+,139.58480,21.61227,90.5
+,97.93692,8.49867,108.5
+,79.90506,28.91153,100.5
+,40.54510,9.51130,75.0
+,136.61260,15.82863,75.0
+,106.90960,63.82611,75.0
+,76.19816,46.63517,75.0
+,145.02210,30.40421,94.5
+,101.72660,19.45746,113.5
+,86.97967,43.98130,105.5
+,21.11454,16.57673,75.0
+,131.52700,23.12809,75.0
+,109.44810,63.03707,75.0
+,61.73774,53.69610,75.0
+,135.91480,34.78890,101.5
+,90.65395,25.30813,117.5
+,75.66082,49.38123,105.5
+,30.79976,19.21503,73.5
+,134.92160,32.11148,73.5
+,115.81510,69.88405,73.5
+,67.15240,57.06633,73.5
+,139.56950,44.82271,97.5
+,95.38217,25.95223,112.0
+,78.97741,47.89584,107.0
+,18.88770,10.47136,74.5
+,130.35790,12.40497,74.5
+,114.85390,57.63774,74.5
+,63.47649,48.13175,74.5
+,138.25830,25.62929,97.5
+,89.01810,18.95535,117.0
+,75.67622,43.31009,104.5
+,40.28789,14.90687,69.0
+,134.29020,14.66977,69.0
+,125.54870,56.83236,69.0
+,75.68020,53.65364,69.0
+,142.36350,24.22211,92.5
+,99.44497,25.41932,106.0
+,87.63929,45.45810,99.5
+,25.38359,10.64805,72.5
+,130.99770,9.63434,72.5
+,118.65580,54.78021,72.5
+,68.79280,48.67834,72.5
+,139.77820,20.83856,97.0
+,91.36346,16.29169,111.5
+,75.55544,44.28398,101.0
+,27.93545,5.21197,71
+,130.98990,4.76235,71
+,103.16230,51.99304,71
+,70.59641,43.71388,71
+,136.03820,13.90246,92
+,91.75840,14.31955,109
+,79.95213,35.70748,95)
+macm.dat<-array(macm.dat,c(3,7,9))
+macm.dat<-aperm(macm.dat,c(2,1,3))
+
+sooty.dat<- c(-1426,-310.4167
+,-1424,-160.4167
+,-1117,320.5833
+,-755,854.5833
+,1238,1363.5833
+,2330,471.5833
+,1435,-748.4167
+,771,-557.4167
+,433,-395.4167
+,-176,-299.4167
+,-376,-290.4167
+,-933,-248.4167
+,-1000.20254,-1601.5969
+,-1076.57007,-1266.4282
+,-1124.65334,-635.6890
+,-1193.94980,147.7853
+,-61.16474,1895.7533
+,1484.57069,2113.5422
+,1649.32657,746.7048
+,1212.33458,388.9087
+,730.79486,166.1701
+,156.62415,-383.9590
+,-88.03479,-533.8656
+,-689.07556,-1037.3256)
+sooty.dat<-array(sooty.dat,c(2,12,2))
+sooty.dat<-aperm(sooty.dat,c(2,1,3))
 
 
 
 
 
-#S-Plus routines written by Mohammad Faghihi (University of Leeds) 1993
 
-#For questions about using the routines contact Ian Dryden or Charles Taylor 
-#(University of Leeds)  
+#The Procrustes routines in the next part were primarily 
+# written by Mohammad Faghihi (University of Leeds) 1993
 
 
 
@@ -3047,12 +3378,14 @@ add<-function(a3)
 }
 
 
- bgpa<-function(a3)
+bgpa<-function(a3,proc.output=FALSE)
 {
 	h <- 0
-	zd <- cnt3(a3)
-	zz <- cor(vec(zd))
+#	zd <- cnt3(a3)
+	zd<-a3
+
 	s <- 0
+n<-dim(a3)[3]
 #	for(j in 1:dim(a3)[3]) {
 #		s <- s + (norm(zd[,  , j])^2)
 #	}
@@ -3061,7 +3394,53 @@ add<-function(a3)
 #	for(i in 1:dim(a3)[3]) {
 #		h[i] <- sqrt(s/(norm(zd[,  , i])^2)) * eigen(zz)$vectors[i, 1]
 #	}
+
+
+#try to speed it up!
+
+      omat<-t(vec(zd))
+ kk<-dim(omat)[2]
+ nn<-dim(omat)[1]
+     if (nn > kk){
+ 
+#      qq<-diag(cov(vec(zd)))
+       qq<-rep(0,times=nn)     
+
+      for (i in 1:n){
+      qq[i]<-var(omat[i,])*(n-1)/n
+      omat[i,]<-omat[i,]-mean(omat[i,])
+      }
+omat<-diag(sqrt(1/qq))%*%omat
+n<-kk
+Lmat<-t(omat)%*%omat/n
+
+
+eig<-eigen(Lmat,symmetric=T)
+U<-eig$vectors
+lambda<-eig$values
+
+V<-omat%*%U
+
+vv<-rep(0,times=n)
+for (i in 1:n){
+vv[i]<-sqrt(t(V[,i])%*%V[,i])
+V[,i]<-V[,i]/vv[i]
+}
+
+delta<-sqrt(abs(lambda/n))*vv
+
+od<-n+1-rank(delta)
+delta<-delta[od]
+V<-V[,od]
+
+	h<-sqrt(s/aa)*V[,1]
+}
+if (kk>=nn){
+	zz <- cor(vec(zd))
 	h<-sqrt(s/aa)*eigen(zz)$vectors[, 1]
+}
+
+
 	return(h)
 }
 
@@ -3126,6 +3505,7 @@ dif.old<-function(a3)
 
 
 #dif<-function(a3)
+#original (slow) version
 #{
 #        s <- 0
 #n<-dim(a3)[3]
@@ -3138,11 +3518,22 @@ dif.old<-function(a3)
 #psum*n
 #}
 
-dif<-function(a3)
+#dif<-function(a3)
+##faster version
+#{
+#x<-sweep(a3,c(1,2),apply(a3,c(1,2),mean))
+#z<-norm(as.vector(x))^2/dim(a3)[3]
+#z
+#}
+
+dif<-function (a3) 
 {
-x<-sweep(a3,c(1,2),apply(a3,c(1,2),mean))
-z<-norm(as.vector(x))^2/dim(a3)[3]
-z
+#version that does not depend on scale of original measurements
+# assumes already centred
+    cc<-centroid.size(add(a3)/dim(a3)[3])
+    x <- sweep(a3, c(1, 2), apply(a3, c(1, 2), mean))
+    z <- norm(as.vector(x)/cc)^2/dim(a3)[3]
+    z
 }
 
  fJ<-function(n)
@@ -3195,27 +3586,41 @@ fgpa.singleiteration<-function(a3, p)
 	return(zd)
 }
 
-fgpa<-function(a3, tol1, tol2)
+fgpa<-function(a3, tol1, tol2,proc.output=FALSE)
 {
 #
-#  Fully iterative fgpa
+#  Fully iterative fgpa (now assumes a3 is already centred)
 #
 #
 	zd <- list(rot. = 0, r.s.r. = 0, Gpa = 0, I.no. = 0, mshape = 0)
       p<-tol1
-	zz <- rgpa(a3, p)
-      x1<-msh(zz$rotated)       
+if (proc.output){cat(" Step             | Objective function | change \n")}       
+if (proc.output){cat("---------------------------------------------------\n")}       
+      x1<-dif(a3)
+if (proc.output){cat("Initial objective fn",x1,"  -  \n")}       
+if (proc.output){cat("-----------------------------------------\n")}       
+	zz <- rgpa(a3, p,proc.output=proc.output)
+      x2<-dif(zz$rotated)
+if (proc.output){cat("Rotation step      0",x2,x1-x2," \n")}       
+if (proc.output){cat("-----------------------------------------\n")}       
 ii<-1
-	zz <- rgpa(sgpa(zz$rotated), p)
-x2<-msh(zz$rotated)
-rho<-riemdist(x1,x2)
+	zz <- rgpa(sgpa(zz$rotated,proc.output=proc.output), p,proc.output=proc.output)
+x1<-x2
+x2<-dif(zz$rotated)
+rho<- x1-x2
+if (proc.output){cat("Scale/rotate step ",ii,x2,rho," \n")}
+if (proc.output){cat("-----------------------------------------\n")}       
+
 if (rho > tol2){
         while (rho > tol2){
 x1<-x2
 ii<-ii+1
-	zz <- rgpa(sgpa(zz$rotated), p)
-     x2<-msh(zz$rotated)
-rho<-riemdist(x1,x2) 
+	zz <- rgpa(sgpa(zz$rotated,proc.output=proc.output), p,proc.output=proc.output)
+     x2<-dif(zz$rotated)
+rho<- x1-x2 
+if (proc.output){cat("Scale/rotate step ",ii,x2,rho," \n")}
+if (proc.output){cat("-----------------------------------------\n")}       
+
         }
         }
 	zd$r.s.r. <- zz$rotated
@@ -3236,14 +3641,14 @@ fgpa.rot<-function(a3, tol1, tol2)
 	zz <- rgpa(a3, p)
       x1<-msh(zz$rotated)       
 ii<-zz$r.no.
-#	zz <- rgpa(zz$rotated, p)
+#	zz <- rgpa(zz$rotated, p,proc.output=proc.output)
 #x2<-msh(zz$rotated)
 #rho<-riemdist(x1,x2)
 #        while (rho > tol2){
 #print(rho)
 #x1<-x2
 #ii<-ii+1
-#	zz <- rgpa(zz$rotated, p)
+#	zz <- rgpa(zz$rotated, p,proc.output=proc.output)
 #     x2<-msh(zz$rotated)
 #rho<-riemdist(x1,x2) 
 #        }
@@ -3324,14 +3729,15 @@ norm<-function(a)
 }
 
 
- rgpa<-function(a3, p)
+rgpa<-function(a3, p,proc.output=FALSE)
 {
 	zd <- list(rotated = 0, dif = 0, r.no. = 0, inc = 0)
 	l <- dim(a3)[3]
 	a <- 0
 	d <- 0
 	n <- 0
-	zz <- cnt3(a3)
+#	zz <- cnt3(a3)
+	zz <- a3
 #        print("Rotations ...")
 #       print("Iteration,meanSS before,meanSS after,difference,tolerance")
 	d[1] <- 10^12
@@ -3352,12 +3758,16 @@ if (dif(zz) > p){
 		d[2] <- dif(zz)
 		a[n + 1] <- d[2]
 #		print(c(n,d[1],d[2],d[1]-d[2],p))
+if (proc.output){cat("  Rotation iteration  ",n,d[2],d[1]-d[2]," \n")}
 	}
 	}
 	zd$rotated <- zz
 	zd$dif <- a
 	zd$r.no. <- n
         zd$inc<-d[1]-d[2]
+if (proc.output){cat("-----------------------------------------\n")}       
+
+
 	return(zd)
 }
 
@@ -3372,16 +3782,17 @@ if (dif(zz) > p){
 #	return(zz)
 #}
 
-sgpa<-function(a3)
+sgpa<-function(a3,proc.output=FALSE)
 {
 	zz <- a3
 	di<-dim(a3)
-	a <- bgpa(zz)
+	a <- bgpa(zz,proc.output=proc.output)
 	i<-rep(dim(a3)[1]*dim(a3)[2],dim(a3)[3])
 	sequen<-rep(a,i)
 	
 	zz<-array(as.vector(a3)*sequen,di)
-	
+if (proc.output){cat("  Scaling updated \n")}
+
 	return(zz)
 }
 
@@ -3444,6 +3855,8 @@ fort.ROTATION<-function(a, b)
 }
  	return(tt)
 }
+############end of Mohammad Faghihi's routines
+
 
 #alias functions (all lower-case)
 

@@ -56,21 +56,17 @@ title("TPS grid: Female mean (left) to Male mean (right)")
 cat("##########################################################\n")
 cat("#3D example\n#")
 cat("##########################################################\n")
-data(dna.dat)
-subsetobs<-c(1:10)
-dna<-procGPA(dna.dat[,,subsetobs],tol1=0.1)
-shapepca(dna,pcno=1)
+
+# Male macaques data (Dryden/Mardia 1998) 
+
+data(macm.dat)
+out<-procGPA(macm.dat)
 
 par(mfrow=c(2,2))
-plot(dna$rawscores[,1],dna$rawscores[,2],type="l",xlab="PC1",ylab="PC2")
-points(dna$rawscores[1,1],dna$rawscores[1,2])
-title("PC scores - joined up through time")
-plot(dna$rawscores[,2],dna$rawscores[,3],type="l",xlab="PC2",ylab="PC3")
-points(dna$rawscores[1,2],dna$rawscores[1,3])
-plot(dna$rawscores[,1],dna$rawscores[,3],type="l",xlab="PC1",ylab="PC3")
-points(dna$rawscores[1,1],dna$rawscores[1,3])
-plot(dna$size,dna$rho,xlab="size",ylab="rho",type="l")
-points(dna$size[1],dna$rho[1])
+plot(out$rawscores[,1],out$rawscores[,2],xlab="PC1",ylab="PC2")
+title("PC scores")
+plot(out$rawscores[,2],out$rawscores[,3],xlab="PC2",ylab="PC3")
+plot(out$rawscores[,1],out$rawscores[,3],xlab="PC1",ylab="PC3")
+plot(out$size,out$rho,xlab="size",ylab="rho")
 title("Size versus shape distance")
-
-
+

@@ -50,15 +50,10 @@ shapepca(gorm,type="r",mag=3)
 shapepca(gorm,type="v",mag=3)
 
 #3D example
-
-data(dna.dat)
-subsetobs<-c(1:10)
-subsetk<-c(1,3,5,7,9,11,12,14,16,18,20,22)
-dna<-procGPA(dna.dat[subsetk,,subsetobs],tol1=0.1)
-
+#data(macm.dat)
+#out<-procGPA(macm.dat)
 #movie
-#shapepca(dna,pcno=1)
-
+#shapepca(out,pcno=1)
 }
 \keyword{hplot}
 \keyword{multivariate}
