@@ -70,13 +70,13 @@ Goodall, C.R. (1991). Procrustes methods in the statistical analysis
 of shape (with discussion). Journal of the Royal Statistical Society, 
 Series B, 53: 285-339. 
 
-Gower, J.C. (1975). Generalized Procrustes analysis, Psychometrika, 40, 33--50.} 
+Gower, J.C. (1975). Generalized Procrustes analysis, Psychometrika, 40, 33--50. 
 
 Kent, J.T. (1994). The complex Bingham distribution and shape analysis,
-Journal of the Royal Statistical Society, Series B, 56, 285-299.}
+Journal of the Royal Statistical Society, Series B, 56, 285-299.
 
 Ten Berge, J.M.F. (1977). Orthogonal Procrustes rotation for two or more 
-matrices. Psychometrika, 42, 267-276. 
+matrices. Psychometrika, 42, 267-276. }
 \author{Ian Dryden, with input from Mohammad Faghihi and Alfred Kume}
 \seealso{procOPA,riemdist,shapepca,testmeanshapes}
 

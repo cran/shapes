@@ -4,7 +4,7 @@
 # written by Ian Dryden - suitable for use in R or S-Plus
 # (c) Ian Dryden, University of Nottingham, 2000-2003
 #   
-#          Version 1.0-4  4/11/03    
+#          Version 1.0-6  8/11/03    
 #
 #----------------------------------------------------------------------
 #
@@ -2000,6 +2000,7 @@ percent = 0,
     m <- dim(x)[2]
     n <- dim(x)[3]
 #    print("GPA (rotation only)")
+    x<-cnt3(x)
     zgpa <- fgpa.rot(x, tol1, tol2,proc.output=proc.output)
     tanpartial <- matrix(0, k * m - m, n)
     
@@ -3379,6 +3380,7 @@ add<-function(a3)
 
 bgpa<-function(a3,proc.output=FALSE)
 {
+#assumes a3 is centred
 	h <- 0
 #	zd <- cnt3(a3)
 	zd<-a3
@@ -3442,7 +3444,7 @@ h<-abs(h)
 	return(h)
 }
 
- close1<-function(a)
+close1<-function(a)
 {
 	a1 <- matrix(0:0, nrow = dim(a)[1] + 1, ncol = dim(a)[2])
 	for(i in 1:dim(a)[1]) {
@@ -3630,13 +3632,10 @@ if (proc.output){cat("-----------------------------------------\n")}
 
 fgpa.rot<-function(a3, tol1, tol2,proc.output=FALSE)
 {
-#
-#  Fully iterative fgpa
-#
-#
+# Assumes that a3 has been centred already
 	zd <- list(rot. = 0, r.s.r. = 0, Gpa = 0, I.no. = 0, mshape = 0)
       p<-tol1
-	zz <- rgpa(a3, p)
+	zz <- rgpa(a3, p,proc.output=proc.output)
       x1<-msh(zz$rotated)       
 ii<-zz$r.no.
 #	zz <- rgpa(zz$rotated, p,proc.output=proc.output)
@@ -3729,6 +3728,7 @@ norm<-function(a)
 
 rgpa<-function(a3, p,proc.output=FALSE)
 {
+# assumes a3 already centred now
 	zd <- list(rotated = 0, dif = 0, r.no. = 0, inc = 0)
 	l <- dim(a3)[3]
 	a <- 0
@@ -3782,6 +3782,7 @@ if (proc.output){cat("-----------------------------------------\n")}
 
 sgpa<-function(a3,proc.output=FALSE)
 {
+#assumes a3 is centred
 	zz <- a3
 	di<-dim(a3)
 	a <- bgpa(zz,proc.output=proc.output)
