@@ -4,7 +4,7 @@
 # written by Ian Dryden - suitable for use in R or S-Plus
 # (c) Ian Dryden, University of Nottingham, 2000-2003
 #   
-#          Version 1.0-6  8/11/03    
+#          Version 1.0-7  14/11/03    
 #
 #----------------------------------------------------------------------
 #
@@ -1695,6 +1695,10 @@ procdistreflect<-function(x, y)
 #input  k x m matrices x, y
 #output reflection shape distance (rho*) between them
 #if x, y are not too far apart then (rho*)=rho (Riemannian dist)
+   if (sum((x - y)^2) == 0) {
+        riem <- 0
+    }
+    if (sum((x - y)^2) != 0) {
 	m <- ncol(x)
 	z <- preshape(x)
 	w <- preshape(y)
@@ -1702,6 +1706,7 @@ procdistreflect<-function(x, y)
 	ev <- sqrt(eigen(Q, symm = TRUE)$values)
 #	riem <- acos(sum(ev))
 	riem<-acos(min(sum(ev),1))
+	} 
 	riem
 }
 procrustes2d<-function(x, l1=1, l2=2, approxtangent=FALSE)
@@ -1856,7 +1861,6 @@ tol1=1e-05,tol2=tol1,approxtangent=TRUE,proc.output=FALSE,distances=TRUE,pcaoutp
 	}
 	m <- dim(x)[2]
 if (reflect==FALSE){
-fort<-fort.ROTATION
 if ((m == 2)&&(scale==TRUE)){
 if (eigen2d==TRUE){
 out<-procrustes2d(x,approxtangent=approxtangent)
@@ -1864,37 +1868,34 @@ out<-procrustes2d(x,approxtangent=approxtangent)
 else
 {
 out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,proc.output=proc.output,
-distances=distances,pcaoutput=pcaoutput)
+distances=distances,pcaoutput=pcaoutput,reflect=reflect)
 }                 
 }
 if ((m > 2)&&(scale==TRUE)){
 out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,proc.output=proc.output
-,distances=distances,pcaoutput=pcaoutput)
+,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
 }
 if (scale==FALSE){
 out<-procrustesGPA.rot(x,tol1,tol2,approxtangent=approxtangent,
-proc.output=proc.output,distances=distances,pcaoutput=pcaoutput)
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
 }
 }
 if (reflect==TRUE){
-#print("Include reflection invariance")
-fort<-fort.ROTATEANDREFLECT
 if (scale==TRUE){
 out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,
-proc.output=proc.output,distances=distances,pcaoutput=pcaoutput)
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
 }
 if (scale==FALSE){
 out<-procrustesGPA.rot(x,tol1,tol2,approxtangent=approxtangent,
-proc.output=proc.output,distances=distances,pcaoutput=pcaoutput)
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
 }
 }
-fort<-fort.ROTATION
 out
 }
 
 
 procrustesGPA<-function (x, tol1 = 1e-05, tol2 = 1e-05,distances=TRUE,pcaoutput=TRUE,
-approxtangent=TRUE,proc.output=FALSE) 
+approxtangent=TRUE,proc.output=FALSE,reflect=FALSE) 
 {
 	z <- list(k = 0, m = 0, n = 0, 
 	rotated = 0, 
@@ -1916,7 +1917,7 @@ approxtangent=TRUE,proc.output=FALSE)
     m <- dim(x)[2]
     n <- dim(x)[3]
     x<-cnt3(x)
-    zgpa <- fgpa(x, tol1, tol2,proc.output=proc.output)
+    zgpa <- fgpa(x, tol1, tol2,proc.output=proc.output,reflect=reflect)
     if (pcaoutput==TRUE){
     if (proc.output){cat("PCA calculation ...\n")}
     tanpartial <- matrix(0, k * m - m, n)
@@ -1978,7 +1979,7 @@ approxtangent=TRUE,proc.output=FALSE)
 
 
 procrustesGPA.rot<-function (x, tol1 = 1e-05, tol2 = 1e-05, distances = TRUE, 
-pcaoutput=TRUE, approxtangent=TRUE,proc.output=FALSE) 
+pcaoutput=TRUE, approxtangent=TRUE,proc.output=FALSE,reflect=FALSE) 
 {
 	z <- list(k = 0, m = 0, n = 0, 
 	rotated = 0, 
@@ -2001,7 +2002,7 @@ percent = 0,
     n <- dim(x)[3]
 #    print("GPA (rotation only)")
     x<-cnt3(x)
-    zgpa <- fgpa.rot(x, tol1, tol2,proc.output=proc.output)
+    zgpa <- fgpa.rot(x, tol1, tol2,proc.output=proc.output,reflect=reflect)
     tanpartial <- matrix(0, k * m - m, n)
     
   if (pcaoutput==TRUE){
@@ -3586,7 +3587,7 @@ fgpa.singleiteration<-function(a3, p)
 	return(zd)
 }
 
-fgpa<-function(a3, tol1, tol2,proc.output=FALSE)
+fgpa<-function(a3, tol1, tol2,proc.output=FALSE,reflect=FALSE)
 {
 #
 #  Fully iterative fgpa (now assumes a3 is already centred)
@@ -3599,12 +3600,13 @@ if (proc.output){cat("---------------------------------------------------\n")}
       x1<-dif(a3)
 if (proc.output){cat("Initial objective fn",x1,"  -  \n")}       
 if (proc.output){cat("-----------------------------------------\n")}       
-	zz <- rgpa(a3, p,proc.output=proc.output)
+	zz <- rgpa(a3, p,proc.output=proc.output,reflect=reflect)
       x2<-dif(zz$rotated)
 if (proc.output){cat("Rotation step      0",x2,x1-x2," \n")}       
 if (proc.output){cat("-----------------------------------------\n")}       
 ii<-1
-	zz <- rgpa(sgpa(zz$rotated,proc.output=proc.output), p,proc.output=proc.output)
+	zz <- rgpa(sgpa(zz$rotated,proc.output=proc.output), 
+	p,proc.output=proc.output,reflect=reflect)
 x1<-x2
 x2<-dif(zz$rotated)
 rho<- x1-x2
@@ -3615,7 +3617,8 @@ if (rho > tol2){
         while (rho > tol2){
 x1<-x2
 ii<-ii+1
-	zz <- rgpa(sgpa(zz$rotated,proc.output=proc.output), p,proc.output=proc.output)
+	zz <- rgpa(sgpa(zz$rotated,proc.output=proc.output), 
+	p,proc.output=proc.output,reflect=reflect)
      x2<-dif(zz$rotated)
 rho<- x1-x2 
 if (proc.output){cat("Scale/rotate step ",ii,x2,rho," \n")}
@@ -3630,15 +3633,15 @@ if (proc.output){cat("-----------------------------------------\n")}
 	return(zd)
 }
 
-fgpa.rot<-function(a3, tol1, tol2,proc.output=FALSE)
+fgpa.rot<-function(a3, tol1, tol2,proc.output=FALSE,reflect=FALSE)
 {
 # Assumes that a3 has been centred already
 	zd <- list(rot. = 0, r.s.r. = 0, Gpa = 0, I.no. = 0, mshape = 0)
       p<-tol1
-	zz <- rgpa(a3, p,proc.output=proc.output)
+	zz <- rgpa(a3, p,proc.output=proc.output,reflect=reflect)
       x1<-msh(zz$rotated)       
 ii<-zz$r.no.
-#	zz <- rgpa(zz$rotated, p,proc.output=proc.output)
+#	zz <- rgpa(zz$rotated, p,proc.output=proc.output,reflect=reflect)
 #x2<-msh(zz$rotated)
 #rho<-riemdist(x1,x2)
 #        while (rho > tol2){
@@ -3726,9 +3729,11 @@ norm<-function(a)
 }
 
 
-rgpa<-function(a3, p,proc.output=FALSE)
+rgpa<-function(a3, p,reflect=FALSE,proc.output=FALSE)
 {
 # assumes a3 already centred now
+if (reflect==TRUE) 
+{ fort<-fort.ROTATEANDREFLECT } 
 	zd <- list(rotated = 0, dif = 0, r.no. = 0, inc = 0)
 	l <- dim(a3)[3]
 	a <- 0
@@ -3765,7 +3770,7 @@ if (proc.output){cat("  Rotation iteration  ",n,d[2],d[1]-d[2]," \n")}
         zd$inc<-d[1]-d[2]
 if (proc.output){cat("-----------------------------------------\n")}       
 
-
+fort<-fort.ROTATION
 	return(zd)
 }
 
