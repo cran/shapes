@@ -1,0 +1,8 @@
+bookstein2d              Bookstein's baseline registration for 2D data
+plotshapes               Plot 2D shapes and configurations
+procGPA                  Generalised Procrustes analysis
+procOPA                  Ordinary Procrustes analysis
+riemdist                 Riemannian shape distance
+shapepca                 Graphical displays of shape principal components
+testmeanshapes           Tests for mean shape difference
+tpsgrid                  Thin-plate spline transformation grids
