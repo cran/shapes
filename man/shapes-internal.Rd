@@ -120,7 +120,7 @@
 \alias{tantofigure} 
 \alias{tantofigurefull} 
 \alias{tantopreshape} 
-\alias{vec} 
+\alias{vec1} 
 \title{Internal function(s)}
 \description{Internal function(s)}
 \keyword{internal}

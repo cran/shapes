@@ -1,10 +1,10 @@
 #-----------------------------------------------------------------------
 #
 # Statistical shape analysis routines
-# written by Ian Dryden - suitable for use in R or S-Plus
-# (c) Ian Dryden, University of Nottingham, 2000-2003
+# written by Ian Dryden - suitable for use in R
+# (c) Ian Dryden, University of Nottingham, 2000-2004
 #   
-#          Version 1.0-7  14/11/03    
+#          Version 1.0-8  14/12/04    
 #
 #----------------------------------------------------------------------
 #
@@ -64,14 +64,14 @@ out
 
 procOPA<-function(A,B,scale=TRUE,reflect=FALSE){
 out<-list(R=0,s=0,Ahat=0,Bhat=0,OSS=0)
-if (as.complex(sum(A))==TRUE){
+if (is.complex(sum(A))==TRUE){
 k<-length(A)
 Areal<-matrix(0,k,2)
 Areal[,1]<-Re(A)
 Areal[,2]<-Im(A)
 A<-Areal
 }
-if (as.complex(sum(B))==TRUE){
+if (is.complex(sum(B))==TRUE){
 k<-length(B)
 Breal<-matrix(0,k,2)
 Breal[,1]<-Re(B)
@@ -642,7 +642,7 @@ bookstein2d<-function(A,l1=1,l2=2){
 #output: z$bshpv - Bookstein shape variables array (including baseline)
 # z$mshape - Bookstein mean shape (including baseline points) 
 z <- list(k = 0, n = 0, mshape=0,bshpv=0)
-if (as.complex(A)==TRUE){
+if (is.complex(sum(A))==TRUE){
 n<-dim(A)[2]
 k<-dim(A)[1]
 B<-array(0,k,2,n)
@@ -3363,7 +3363,7 @@ sooty.dat<-aperm(sooty.dat,c(2,1,3))
 # sim1(n, d, s) simulated n points with normal distribution 
 #  (mean=fcel(n,d) sd=s )
 
-# vec(a3) vectorizes matrices a3[ , , i]
+# vec1(a3) vectorizes matrices a3[ , , i]
 
 
 #=========================================================================
@@ -3400,12 +3400,12 @@ n<-dim(a3)[3]
 
 #try to speed it up!
 
-      omat<-t(vec(zd))
+      omat<-t(vec1(zd))
  kk<-dim(omat)[2]
  nn<-dim(omat)[1]
      if (nn > kk){
  
-#      qq<-diag(cov(vec(zd)))
+#      qq<-diag(cov(vec1(zd)))
        qq<-rep(0,times=nn)     
 
       for (i in 1:n){
@@ -3437,7 +3437,7 @@ V<-V[,od]
 	h<-sqrt(s/aa)*V[,1]
 }
 if (kk>=nn){
-	zz <- cor(vec(zd))
+	zz <- cor(vec1(zd))
 	h<-sqrt(s/aa)*eigen(zz)$vectors[, 1]
 }
 
@@ -3824,7 +3824,7 @@ sim1<-function(n, d, s)
 	b[, 2] <- rnorm(n, mean = a[, 2], sd = sig)
 	b
 }
-vec<-function(a3)
+vec1<-function(a3)
 {
 	#zz <- array(c(0:0), dim = c((dim(a3)[1] * dim(a3)[2]), dim(a3)[3]))
 	#for(i in 1:dim(a3)[3]) {
