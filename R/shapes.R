@@ -4,7 +4,7 @@
 # written by Ian Dryden - suitable for use in R or S-Plus
 # (c) Ian Dryden, University of Nottingham, 2000-2003
 #   
-#          Version 1.0-2  30/10/03   
+#          Version 1.0-4  4/11/03    
 #
 #----------------------------------------------------------------------
 #
@@ -79,9 +79,8 @@ Breal[,2]<-Im(B)
 B<-Breal
 }
 if (reflect==FALSE){
-R<-fort.ROTATION(A,B)
-}
-if (reflect==TRUE){
+R<-fort.ROTATION(A,B)} else 
+{
 R<-fort.ROTATEANDREFLECT(A,B)
 }
 s<-1
@@ -3428,8 +3427,7 @@ V[,i]<-V[,i]/vv[i]
 }
 
 delta<-sqrt(abs(lambda/n))*vv
-
-od<-n+1-rank(delta)
+od<-order(delta,decreasing=TRUE)
 delta<-delta[od]
 V<-V[,od]
 
@@ -3440,7 +3438,7 @@ if (kk>=nn){
 	h<-sqrt(s/aa)*eigen(zz)$vectors[, 1]
 }
 
-
+h<-abs(h)
 	return(h)
 }
 
@@ -3630,7 +3628,7 @@ if (proc.output){cat("-----------------------------------------\n")}
 	return(zd)
 }
 
-fgpa.rot<-function(a3, tol1, tol2)
+fgpa.rot<-function(a3, tol1, tol2,proc.output=FALSE)
 {
 #
 #  Fully iterative fgpa
@@ -3855,7 +3853,7 @@ fort.ROTATION<-function(a, b)
 }
  	return(tt)
 }
-############end of Mohammad Faghihi's routines
+############end of Mohammad Faghihi's (adapted) routines
 
 
 #alias functions (all lower-case)

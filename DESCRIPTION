@@ -1,6 +1,6 @@
 Package: shapes                  
 Title: Statistical shape analysis
-Version: 1.0-2
+Version: 1.0-4
 Author: Ian Dryden   
 Description: Routines for the statistical analysis 
   of shapes. In particular, the package provides routines for 

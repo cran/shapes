@@ -14,19 +14,13 @@ Dryden, I.L. and Mardia, K.V. (1998).
 Statistical Shape Analysis, Wiley, Chichester. p313
 }
 \references{
-http://www.maths.nott.ac.uk/~ild/bookdata/qset2.dat
+http://www.maths.nott.ac.uk/personal/ild/bookdata/qset2.dat
 
 Data from Paul O'Higgins (Hull-York Medical School) and David Johnson (Leeds)
 }
 \examples{
 data(qset2.dat)
-k<-dim(qset2.dat)[1]
-n<-dim(qset2.dat)[3]
-par(pty="s")
-plot(qset2.dat[,,1],xlim=c(0,250),ylim=c(0,250),type="n",xlab=" ",ylab=" ")
-for (i in 1:n){
-points(qset2.dat[,,i],pch=c(1:k))
-}
+plotshapes(qset2.dat)
 }
 \keyword{datasets}
 

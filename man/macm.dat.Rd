@@ -18,13 +18,7 @@ Data from Paul O'Higgins (Hull-York Medical School)
 }
 \examples{
 data(macm.dat)
-n<-dim(macm.dat)[3]
-par(pty="s")
-plot(macm.dat[,1:2,1],xlim=c(0,180),ylim=c(-50,130),type="n",xlab=" ",ylab=" ")
-for (i in 1:n){
-points(macm.dat[,1:2,i],pch=c(1:7))
-}
-testmeanshapes(macm.dat,macf.dat)
+plotshapes(macm.dat)
 }
 \keyword{datasets}
 

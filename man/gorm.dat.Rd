@@ -14,18 +14,13 @@ Dryden, I.L. and Mardia, K.V. (1998).
 Statistical Shape Analysis, Wiley, Chichester. p317 
 }
 \references{
-http://www.maths.nott.ac.uk/~ild/bookdata/gorm.dat
+http://www.maths.nott.ac.uk/personal/ild/bookdata/gorm.dat
 
 Data from Paul O'Higgins (Hull-York Medical School)
 }
 \examples{
 data(gorm.dat)
-n<-dim(gorm.dat)[3]
-par(pty="s")
-plot(gorm.dat[,,1],xlim=c(-50,250),ylim=c(-50,250),type="n",xlab=" ",ylab=" ")
-for (i in 1:n){
-points(gorm.dat[,,i],pch=c(1:8))
-}
+plotshapes(gorm.dat)
 }
 \keyword{datasets}
 

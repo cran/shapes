@@ -44,7 +44,7 @@ should be calculated}
 \item{mshape}{Procrustes mean shape. Note this is unit size if complex 
 eigenanalysis used, but on the scale of the data if iterative GPA is used.} 
 \item{tan}{If approxtangent=TRUE this is the mk x n matrix of 
-Procrustes APPROXIMATE tangent coordinates $X_i^P$ - Xbar , where Xbar = mean($X_i^P$), which are also known as the 
+Procrustes approximate tangent coordinates $X_i^P$ - Xbar , where Xbar = mean($X_i^P$), which are also known as the 
 Procrustes residuals. If approxtangent=FALSE this is 
 the km-m x n matrix of partial Procrustes tangent coordinates
 with pole given by the preshape of the Procrustes mean}
@@ -61,7 +61,7 @@ tan}
 \item{rawscores}{raw PC scores using tan} 
 \item{rho}{Kendall's Riemannian distance $\rho$ to the mean shape}
 \item{rmsrho}{r.m.s. of rho} 
-\item{rmsd1}{r.m.s. of full Procrustes distances to the mean shape dF}
+\item{rmsd1}{r.m.s. of full Procrustes distances to the mean shape $d_F$}
 }
 \references{Dryden, I.L. and Mardia, K.V. (1998). Statistical 
 Shape Analysis, Wiley, Chichester. 
@@ -75,11 +75,10 @@ Gower, J.C. (1975). Generalized Procrustes analysis, Psychometrika, 40, 33--50.}
 Kent, J.T. (1994). The complex Bingham distribution and shape analysis,
 Journal of the Royal Statistical Society, Series B, 56, 285-299.}
 
+Ten Berge, J.M.F. (1977). Orthogonal Procrustes rotation for two or more 
+matrices. Psychometrika, 42, 267-276. 
 \author{Ian Dryden, with input from Mohammad Faghihi and Alfred Kume}
 \seealso{procOPA,riemdist,shapepca,testmeanshapes}
-
-
-
 
 \examples{
 
@@ -111,7 +110,7 @@ pairs(x,panel=function(x,y) text(x,y,gor.gp),
 #3D example
 
 data(macm.dat)
-out<-procGPA(macm.dat)
+out<-procGPA(macm.dat,scale=FALSE)
 
 par(mfrow=c(2,2))
 plot(out$rawscores[,1],out$rawscores[,2],xlab="PC1",ylab="PC2")
