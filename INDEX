@@ -1,8 +1,19 @@
-bookstein2d              Bookstein's baseline registration for 2D data
-plotshapes               Plot 2D shapes and configurations
-procGPA                  Generalised Procrustes analysis
-procOPA                  Ordinary Procrustes analysis
-riemdist                 Riemannian shape distance
-shapepca                 Graphical displays of shape principal components
-testmeanshapes           Tests for mean shape difference
-tpsgrid                  Thin-plate spline transformation grids
+bookstein2d             Bookstein's baseline registration for 2D data
+digit3.dat              Digit 3 data
+gorf.dat                Female gorilla data
+gorm.dat                Male gorilla data
+macf.dat                Female macaque data
+macm.dat                Male macaque data
+plotshapes              Plot configurations
+procGPA                 Generalised Procrustes analysis
+procOPA                 Ordinary Procrustes analysis
+qcet2.dat               Control T2 mouse vertabrae data
+qlet2.dat               Large T2 mouse vertabrae data
+qset2.dat               Small T2 mouse vertabrae data
+resampletest            Tests for 2D mean shape difference, including
+                        boostrap and permutation tests
+riemdist                Riemannian shape distance
+shapepca                Principal components for shape
+sooty.dat               Sooty mangabey data
+testmeanshapes          Tests for mean shape difference
+tpsgrid                 Thin-plate spline transformation grids
