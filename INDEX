@@ -13,6 +13,7 @@ qset2.dat               Small T2 mouse vertabrae data
 resampletest            Tests for 2D mean shape difference, including
                         boostrap and permutation tests
 riemdist                Riemannian shape distance
+schizophrenia.dat       Bookstein's schizophrenia data
 shapepca                Principal components for shape
 sooty.dat               Sooty mangabey data
 testmeanshapes          Tests for mean shape difference

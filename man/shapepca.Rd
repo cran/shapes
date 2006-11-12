@@ -6,26 +6,27 @@
 Provides graphical summaries of principal components for shape.
 }
 \usage{
-shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1))
+shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1), project=c(1,2))
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
   \item{proc}{List given by the output from \code{procGPA()} }
   \item{pcno}{A vector of the PCs to be plotted}
-  \item{type}{Options for the types of plot for the $m=2$ planar case: 
+  \item{type}{Options for the types of plot for the $m=2$ planar case:
    "r" : rows along PCs evaluated at c = -3,0,3 sd's along PC,
   "v" : vectors drawn from mean to +3 sd's along PC,
   "s" : plots along c= -3, -2, -1, 0, 1, 2, 3 superimposed,
   "m" : movie backward and forwards from -3 to +3 sd's along PC,
   "g" : TPS grid from mean to +3 sd's along PC.
- }
+
+ }
   \item{mag}{Magnification of the effect of the PC (scalar multiple of sd's)}
-  \item{joinline}{A vector stating which landmarks are joined up by lines, 
-  e.g. joinline=c(1:n,1) will start at landmark 1, join to 2, ..., join to n, then 
+  \item{joinline}{A vector stating which landmarks are joined up by lines,
+  e.g. joinline=c(1:n,1) will start at landmark 1, join to 2, ..., join to n, then
   re-join to landmark 1.}
+  \item{project}{The default orthogonal projections if in higher than 2 dimensions}
 }
-\details{For $m=3$ the mean and PCs are plotted with orthogonal projections. 
-The display is in the type="m" format only at the moment. 
+\details{For $m=3$ the mean and PCs are plotted with orthogonal projections.
 }
 
 \value{

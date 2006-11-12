@@ -1,7 +1,7 @@
 Package: shapes                  
 Title: Statistical shape analysis
-Date: 2006-5-23 
-Version: 1.0-9
+Date: 2006-11-12 
+Version: 1.0-10
 Author: Ian Dryden   
 Description: Routines for the statistical analysis 
   of shapes. In particular, the package provides routines for 
@@ -11,4 +11,4 @@ Description: Routines for the statistical analysis
 Maintainer: Ian Dryden   <Ian.Dryden@Nottingham.ac.uk> 
 License: GPL 2 
 URL: http://www.maths.nott.ac.uk/~ild/shapes               
-Packaged: Mon May 29 09:58:29 2006; hornik
+Packaged: Mon Nov 13 18:09:39 2006; ild
