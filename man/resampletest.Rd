@@ -1,7 +1,7 @@
 \name{resampletest}
 \alias{resampletest}
 %- Also NEED an `\alias' for EACH other topic documented here.
-\title{Tests for 2D mean shape difference, including boostrap and permutation tests}
+\title{Tests for 2D mean shape difference, including bootstrap and permutation tests}
 \description{
 Carries out tests to examine differences in mean shape
 between two independent populations, for $m=2$ dimensional data.
@@ -55,8 +55,8 @@ k is the number of landmarks and n2 is the sample size. (Alternatively a k x n2 
 }
 
 \references{Amaral, G.J.A., Dryden, I.L. and Wood, A.T.A (2006). Pivotal bootstrap methods
-for $k$-sample problems in directional statistics and shape analysis. University of Nottingham,
-Division of Statistics Technical report.
+for $k$-sample problems in directional statistics and shape analysis. 
+Journal of the American Statistical Association. To appear.
 
 Dryden, I.L. and Mardia, K.V. (1998) Statistical Shape Analysis,
 Wiley, Chichester. Chapter 7.

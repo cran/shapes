@@ -4,7 +4,7 @@
 # written by Ian Dryden - suitable for use in R
 # (c) Ian Dryden, University of Nottingham, 2000-2006
 #
-#          Version 1.0-10  12/11/06
+#          Version 1.0-12  16/03/07
 #
 #----------------------------------------------------------------------
 #
@@ -14,6 +14,126 @@
 #
 #
 ####################
+rotate<-function(x,thetax,thetay,thetaz){
+thetax<-thetax/180*pi
+thetay<-thetay/180*pi
+thetaz<-thetaz/180*pi
+
+Rx<-matrix(c(1,0,0,0,cos(thetax),sin(thetax),0,-sin(thetax),cos(thetax)),3,3)
+Ry<-matrix(c(cos(thetay),0,sin(thetay),0,1,0,-sin(thetay),0,cos(thetay)),3,3)
+Rz<-matrix(c(cos(thetaz),sin(thetaz),0,-sin(thetaz),cos(thetaz),0,0,0,1),3,3)
+
+y<-x
+n<-dim(x)[3]
+for (i in 1:n){
+y[,,i]<-x[,,i]%*%Rx%*%Ry%*%Rz
+}
+y
+}
+
+shapepca3d<-function(procreg,pcno=c(1,2,3)){
+for (i in 1:length(pcno)){
+plotpca3d(procreg,pcno[i])
+}
+}
+
+
+
+
+plotpca3d<-function (procreg, pcno=1)
+{
+par(mfrow=c(1,1))
+out<-defplotsize3(procreg$rotated)
+xl<-out$xl
+xu<-out$xu
+yl<-out$yl
+yu<-out$yu
+zl<-out$zl
+zu<-out$zu
+
+    k <- dim(procreg$mshape)[1]
+subx<-1:k
+suby<-(k+1):(2*k)
+subz<-(2*k+1):(3*k)
+
+evec<-cbind(procreg$pcar[subx,pcno],procreg$pcar[suby,pcno],procreg$pcar[subz,pcno])
+
+
+    for (j in 1:10) {
+        for (ii in -12:12) {
+            mag <- ii/4
+scatterplot3d(procreg$mshape+mag*evec*procreg$pcasd[pcno],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
+  axis=TRUE,highlight.3d=TRUE)
+title(pcno)
+}
+      for (ii in -11:11) {
+            mag <- -ii/4
+scatterplot3d(procreg$mshape+mag*evec*procreg$pcasd[pcno],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
+  axis=TRUE)
+title(pcno)
+        }
+    }
+}
+
+
+shapes3d<-function(x,loop=0,type="p"){
+if (loop == 0){
+plotshapes3d(x,type=type)
+}
+if (loop > 0){
+
+for (i in 1:loop){
+
+plotshapestime3d(x,type=type)
+
+}
+
+}
+}
+
+plotshapes3d<-
+function (x,type="p")
+{
+    par(mfrow = c(1, 1))
+    out <- defplotsize3(x)
+    xl <- out$xl
+    xu <- out$xu
+    yl <- out$yl
+    yu <- out$yu
+    zl <- out$zl
+    zu <- out$zu
+    k <- dim(x)[1]
+    n <- dim(x)[3]
+    y <- matrix(0, k * n, 3)
+    for (i in 1:n) {
+        y[(i - 1) * k + (1:k), ] <- x[, , i]
+    }
+    scatterplot3d(y, xlim = c(xl, xu), ylim = c(yl, yu), zlim = c(zl,
+        zu), xlab = "x", ylab = "y", zlab = "z", axis = TRUE, type=type,
+        highlight.3d = TRUE)
+}
+
+
+plotshapestime3d<-function (x,type="p")
+{
+par(mfrow=c(1,1))
+out<-defplotsize3(x)
+xl<-out$xl
+xu<-out$xu
+yl<-out$yl
+yu<-out$yu
+zl<-out$zl
+zu<-out$zu
+
+n<-dim(x)[3]
+for (i in 1:n){
+scatterplot3d(x[,,i],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
+  axis=TRUE,type=type,highlight.3d=TRUE)
+title(i)
+}
+}
+
+
 
 plotPDMnoaxis3<-function (mean, pc, sd, xl, xu, yl, yu, lineorder, i)
 {
@@ -395,33 +515,37 @@ prcomp1<-function (x, retx = TRUE, center = TRUE, scale. = FALSE, tol = NULL)
 # if using Splus
 # prcomp1<-prcomp
 
-defplotsize<-function(x,project=c(1,2)){
-n<-dim(x)[3]
-if (n > 100){x<-x[,,1:100]}
-out<-list(xl=0,yl=0,width=0)
-xl <- -max( - min(x[,project[1],]), max(x[,project[1],]))
-yl <- -max( - min(x[,project[2],]), max(x[,project[2],]))
-width<-max(-2*xl,-2*yl)
-out$xl<- -width/2*1.2
-out$yl<- -width/2*1.2
-out$width<-width*1.2
-out
+defplotsize3<-function(Y)
+{
+    out <- list(xl = 0, yl = 0, zl=0, xu = 0, yu = 0, zu=0, width = 0)
+    n <- dim(Y)[3]
+        xm <- mean(Y[, 1, ])
+        ym <- mean(Y[, 2, ])
+        zm <- mean(Y[, 3, ])
+    x <- Y
+    x[, 1, ] <- Y[, 1, ] - xm
+    x[, 2, ] <- Y[, 2, ] - ym
+    x[, 3, ] <- Y[, 3, ] - zm
+mn1<-min(x[,1,])
+mn2<-min(x[,2,])
+mn3<-min(x[,3,])
+mx1<-max(x[,1,])
+mx2<-max(x[,2,])
+mx3<-max(x[,3,])
+    xl <- -max(-mn1,mx1)
+    yl <- -max(-mn2,mx2)
+    zl <- -max(-mn3,mx3)
+    width <- max(-2 * xl, -2 * yl, -2*zl)
+    out$xl <- -width/2 * 1.2 + xm
+    out$yl <- -width/2 * 1.2 + ym
+   out$zl <- -width/2 * 1.2 + zm
+     out$xu <- width/2 * 1.2 + xm
+    out$yu <- width/2 * 1.2 + ym
+    out$zu <- width/2 * 1.2 + zm
+    out$width <- width * 1.2
+    out
 }
 
-defplotsize3<-function(x){
-n<-dim(x)[3]
-if (n > 100){x<-x[,,1:100]}
-out<-list(xl=0,yl=0,zl=0,width=0)
-xl <- -max( - min(x[,1,]), max(x[,1,]))
-yl <- -max( - min(x[,2,]), max(x[,2,]))
-zl <- -max( - min(x[,3,]), max(x[,3,]))
-width<-max(-2*xl,-2*yl,-2*zl)
-out$xl<- -width/2*1.2
-out$yl<- -width/2*1.2
-out$zl<- -width/2*1.2
-out$width<-width*1.2
-out
-}
 
 
 procOPA<-function(A,B,scale=TRUE,reflect=FALSE){
@@ -460,32 +584,37 @@ out$Bhat<-Bhat
 out$OSS<-OSS
 out
 }
-defplotsize2<-function(Y,project=c(1,2)){
-out<-list(xl=0,yl=0,xu=0,yu=0,width=0)
-n<-dim(Y)[3]
-if (n > 100){Y<-Y[,,1:100]}
-for (i in 1:n){
-xm<-mean(Y[,project[1],])
-ym<-mean(Y[,project[2],])
+defplotsize2<-function(Y,project=c(1,2))
+{
+    out <- list(xl = 0, yl = 0, xu = 0, yu = 0, width = 0)
+    n <- dim(Y)[3]
+        xm <- mean(Y[, project[1], ])
+        ym <- mean(Y[, project[2], ])
+    x <- Y
+    x[, project[1], ] <- Y[, project[1], ] - xm
+    x[, project[2], ] <- Y[, project[2], ] - ym
+    out <- list(xl = 0, yl = 0, width = 0)
+mn1<-min(x[,project[1],])
+mn2<-min(x[,project[2],])
+mx1<-max(x[,project[1],])
+mx2<-max(x[,project[2],])
+    xl <- -max(-mn1, mx1)
+    yl <- -max(-mn2,mx2)
+    width <- max(-2 * xl, -2 * yl)
+    out$xl <- -width/2 * 1.2 + xm
+    out$yl <- -width/2 * 1.2 + ym
+    out$xu <- width/2 * 1.2 + xm
+    out$yu <- width/2 * 1.2 + ym
+    out$width <- width * 1.2
+    out
 }
-x<-Y
-x[,project[1],]<-Y[,project[1],]-xm
-x[,project[2],]<-Y[,project[2],]-ym
-out<-list(xl=0,yl=0,width=0)
-xl <- -max( - min(x[,project[1],]), max(x[,project[1],]))
-yl <- -max( - min(x[,project[2],]), max(x[,project[2],]))
-width<-max(-2*xl,-2*yl)
-out$xl<- -width/2*1.2+xm
-out$yl<- -width/2*1.2+ym
-out$xu<- width/2*1.2+xm
-out$yu<- width/2*1.2+ym
-out$width<-width*1.2
-out
-}
+
 
 plotshapes<-function(A,B=0,joinline=c(1,1),orthproj=c(1,2)){
 k<-dim(A)[1]
 m<-dim(A)[2]
+kk<-k
+if (k >= 15){kk<-1}
 par(pty="s")
 if (length(c(B))==1){
 par(mfrow=c(1,1))
@@ -493,7 +622,7 @@ par(mfrow=c(1,1))
 if (length(c(B))!=1){
 par(mfrow=c(1,2))
 }
-if (length(dim(A))==3){  
+if (length(dim(A))==3){
 A<-A[,orthproj,]
 }
 if (is.matrix(A)==TRUE){
@@ -519,7 +648,7 @@ n<-dim(A)[3]
 plot(A[,,1],xlim=c(out$xl,out$xl+width),ylim=c(out$yl,
 out$yl+width),type="n",xlab=" ",ylab=" ")
 for (i in 1:n){
-points(A[,,i],pch=c(1:k))
+points(A[,,i],pch=c(1:kk))
 lines(A[joinline,,i])
 }
 if (length(c(B))!=1){
@@ -534,7 +663,7 @@ n<-dim(A)[3]
 plot(A[,,1],xlim=c(ans$xl,ans$xl+width),ylim=c(ans$yl,
 ans$yl+width),type="n",xlab=" ",ylab=" ")
 for (i in 1:n){
-points(A[,,i],pch=c(1:k))
+points(A[,,i],pch=c(1:kk))
 lines(A[joinline,,i])
 }
 }
@@ -2158,7 +2287,7 @@ testmeanshapes<-function(A,B,Hotelling=TRUE,tol1=1e-05,tol2=1e-05){
 	m <- dim(A)[2]
 if (Hotelling==TRUE)  {
 if (m==2) {test<-Hotelling2D(A,B)}
-if (m>2) {test<-Hotellingtest(A,B,,tol1=1e-05,tol2=1e-05)}
+if (m>2) {test<-Hotellingtest(A,B,tol1=tol1,tol2=tol2)}
 cat("Hotelling's T^2 test: ",c("Test statistic = ",round(test$F,2)),
 c("\n p-value = ",round(test$pval,4)),c("Degrees of freedom = ",
 test$df1,test$df2),"\n")
@@ -2166,7 +2295,7 @@ test$df1,test$df2),"\n")
 
 if (Hotelling==FALSE)  {
 if (m==2) {test<-Goodall2D(A,B)}
-if (m>2) {test<-Goodalltest(A,B,,tol1=1e-05,tol2=1e-05)}
+if (m>2) {test<-Goodalltest(A,B,tol1=tol1,tol2=tol2)}
 cat("Goodall's F test: ",c("Test statistic = ",round(test$F,2)),
 c("\n p-value = ",round(test$pval,4)),c("Degrees of freedom = ",
 test$df1,test$df2),"\n")

@@ -1,14 +1,15 @@
-Package: shapes                  
+Package: shapes
 Title: Statistical shape analysis
-Date: 2006-11-12 
-Version: 1.0-10
-Author: Ian Dryden   
-Description: Routines for the statistical analysis 
-  of shapes. In particular, the package provides routines for 
-  procrustes analysis, displaying shapes and principal components, 
-  testing for mean shape difference, thin-plate spline transformation 
+Date: 2007-03-16  
+Version: 1.0-12
+Author: Ian Dryden
+Description: Routines for the statistical analysis
+  of shapes. In particular, the package provides routines for
+  procrustes analysis, displaying shapes and principal components,
+  testing for mean shape difference, thin-plate spline transformation
   grids and edge superimposition methods.
-Maintainer: Ian Dryden   <Ian.Dryden@Nottingham.ac.uk> 
-License: GPL 2 
+Maintainer: Ian Dryden   <Ian.Dryden@Nottingham.ac.uk>
+Depends: scatterplot3d
+License: GPL 2
 URL: http://www.maths.nott.ac.uk/~ild/shapes               
-Packaged: Mon Nov 13 18:09:39 2006; ild
+Packaged: Fri Mar 16 18:10:38 2007; hornik
