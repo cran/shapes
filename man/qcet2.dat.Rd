@@ -1,6 +1,5 @@
 \name{qcet2.dat}
 \alias{qcet2.dat}
-\non_function{}
 \title{Control T2 mouse vertabrae data}
 \description{T2 mouse vertebrae data - control group. 6 landmarks 
 in 2 dimensions, 30 individuals

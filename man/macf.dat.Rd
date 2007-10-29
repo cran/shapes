@@ -1,6 +1,5 @@
 \name{macf.dat}
 \alias{macf.dat}
-\non_function{}
 \title{Female macaque data}
 \description{Female macaque skull data. 7 landmarks 
 in 3 dimensions, 9 individuals

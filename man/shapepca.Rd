@@ -6,7 +6,7 @@
 Provides graphical summaries of principal components for shape.
 }
 \usage{
-shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1), project=c(1,2))
+shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1), project=c(1,2),scores3d=FALSE,colour=2,axes3=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -25,8 +25,13 @@ shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1), proje
   e.g. joinline=c(1:n,1) will start at landmark 1, join to 2, ..., join to n, then
   re-join to landmark 1.}
   \item{project}{The default orthogonal projections if in higher than 2 dimensions}
+  \item{scores3d}{Logical. If TRUE then a 3D scatterplot of the first 3 raw PC scores with 
+labels in `pcno' is given, instead 
+of the default plot of the mean and PC vectors.}
+  \item{colour}{Colour of the spheres used in plotting.}
+  \item{axes3}{Logical. If TRUE then the axes are plotted in a 3D plot.}
 }
-\details{For $m=3$ the mean and PCs are plotted with orthogonal projections.
+\details{The mean and PCs are plotted. 
 }
 
 \value{

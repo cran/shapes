@@ -1,6 +1,5 @@
 \name{pongof.dat}
 \alias{pongof.dat}
-\non_function{}
 \title{Female orang utan data}
 \description{Female orang utan skull data. 8 landmarks
 in 2 dimensions, 30 individuals

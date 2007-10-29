@@ -1,6 +1,5 @@
 \name{schizophrenia.dat}
 \alias{schizophrenia.dat}
-\non_function{}
 \title{Bookstein's schizophrenia data}
 \description{Bookstein's schizophrenia data. 13 landmarks
 in 2 dimensions, 28 individuals.

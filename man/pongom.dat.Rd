@@ -1,6 +1,5 @@
 \name{pongom.dat}
 \alias{pongom.dat}
-\non_function{}
 \title{Male orang utan data}
 \description{Male orang utan skull data. 8 landmarks
 in 2 dimensions, 30 individuals

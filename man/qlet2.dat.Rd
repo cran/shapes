@@ -1,6 +1,5 @@
 \name{qlet2.dat}
 \alias{qlet2.dat}
-\non_function{}
 \title{Large T2 mouse vertabrae data}
 \description{T2 mouse vertebrae data - large group. 6 landmarks 
 in 2 dimensions, 23 individuals

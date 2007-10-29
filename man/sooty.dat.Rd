@@ -1,6 +1,5 @@
 \name{sooty.dat}
 \alias{sooty.dat}
-\non_function{}
 \title{Sooty mangabey data}
 \description{Sooty mangabey data skull data. 12 landmarks 
 in 2 dimensions, 2 individuals (juvenile and adult)

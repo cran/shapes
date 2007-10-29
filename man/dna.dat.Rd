@@ -1,6 +1,5 @@
 \name{dna.dat}
 \alias{dna.dat}
-\non_function{}
 \title{DNA data}
 \description{Part of a 3D DNA molecule moving in time, k = 22 atoms, 30 time points}
 }

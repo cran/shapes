@@ -1,6 +1,5 @@
 \name{qset2.dat}
 \alias{qset2.dat}
-\non_function{}
 \title{Small T2 mouse vertabrae data}
 \description{T2 mouse vertebrae data - small group. 6 landmarks 
 in 2 dimensions, 23 individuals

@@ -1,6 +1,5 @@
 \name{digit3.dat}
 \alias{digit3.dat}
-\non_function{}
 \title{Digit 3 data}
 \description{Handwritten digit `3' data. 13 landmarks 
 in 2 dimensions, 30 individuals

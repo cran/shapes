@@ -1,6 +1,5 @@
 \name{panf.dat}
 \alias{panf.dat}
-\non_function{}
 \title{Female chimpanzee data}
 \description{Female chimpanzee skull data. 8 landmarks
 in 2 dimensions, 26 individuals

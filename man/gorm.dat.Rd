@@ -1,6 +1,5 @@
 \name{gorm.dat}
 \alias{gorm.dat}
-\non_function{}
 \title{Male gorilla data}
 \description{Male gorilla skull data. 8 landmarks 
 in 2 dimensions, 29 individuals

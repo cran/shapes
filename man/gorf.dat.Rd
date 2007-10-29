@@ -1,6 +1,5 @@
 \name{gorf.dat}
 \alias{gorf.dat}
-\non_function{}
 \title{Female gorilla data}
 \description{Female gorilla skull data. 8 landmarks 
 in 2 dimensions, 30 individuals

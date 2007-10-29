@@ -1,6 +1,5 @@
 \name{panm.dat}
 \alias{panm.dat}
-\non_function{}
 \title{Male chimpanzee data}
 \description{Male chimpanzee skull data. 8 landmarks
 in 2 dimensions, 28 individuals

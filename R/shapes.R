@@ -2,9 +2,9 @@
 #
 # Statistical shape analysis routines
 # written by Ian Dryden - suitable for use in R
-# (c) Ian Dryden, University of Nottingham, 2000-2006
+# (c) Ian Dryden, University of Nottingham, 2000-2007
 #
-#          Version 1.0-12  16/03/07
+#          Version 1.1-0  29 October 2007
 #
 #----------------------------------------------------------------------
 #
@@ -76,9 +76,20 @@ title(pcno)
 }
 
 
-shapes3d<-function(x,loop=0,type="p"){
+shapes3d<-function(x,loop=0,type="p",colour=2,joinline=c(1:1),axes3=FALSE){
+
+if (is.matrix(x)){ 
+xt <- array( 0, c(dim(x),1) )
+xt[,,1]<-x
+x<-xt 
+}
 if (loop == 0){
-plotshapes3d(x,type=type)
+k<-dim(x)[1]
+sz<- centroid.size( x[,,1] )/sqrt(k) /30
+plotshapes3d(x,type=type,colour=colour,size=sz,joinline=joinline)
+if (axes3){
+axes3d()
+}
 }
 if (loop > 0){
 
@@ -92,8 +103,16 @@ plotshapestime3d(x,type=type)
 }
 
 plotshapes3d<-
-function (x,type="p")
+function (x,type="p",rgl=TRUE,colour=2,size=1,joinline=c(1:1))
 {
+
+    k <- dim(x)[1]
+    n <- dim(x)[3]
+    y <- matrix(0, k * n, 3)
+    for (i in 1:n) {
+        y[(i - 1) * k + (1:k), ] <- x[, , i]
+    }
+if (rgl==FALSE){
     par(mfrow = c(1, 1))
     out <- defplotsize3(x)
     xl <- out$xl
@@ -102,15 +121,22 @@ function (x,type="p")
     yu <- out$yu
     zl <- out$zl
     zu <- out$zu
-    k <- dim(x)[1]
-    n <- dim(x)[3]
-    y <- matrix(0, k * n, 3)
-    for (i in 1:n) {
-        y[(i - 1) * k + (1:k), ] <- x[, , i]
-    }
     scatterplot3d(y, xlim = c(xl, xu), ylim = c(yl, yu), zlim = c(zl,
-        zu), xlab = "x", ylab = "y", zlab = "z", axis = TRUE, type=type,
+        zu), xlab = "x", ylab = "y", zlab = "z", axis = TRUE, type=type, col=colour, 
         highlight.3d = TRUE)
+}
+if (rgl==TRUE){
+#    rgl.clear()
+#    rgl.bg(color=c("white","black"))
+    spheres3d(y,col=colour,radius=size)
+
+if (length(joinline)>1){  
+for (j in 1:n){
+      lines3d(x[joinline,,j])
+}
+}
+
+}
 }
 
 
@@ -130,7 +156,14 @@ for (i in 1:n){
 scatterplot3d(x[,,i],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
   axis=TRUE,type=type,highlight.3d=TRUE)
 title(i)
+
 }
+
+
+
+
+
+
 }
 
 
@@ -150,11 +183,20 @@ plotPDMnoaxis3<-function (mean, pc, sd, xl, xu, yl, yu, lineorder, i)
 #################################
 
 
-shapepca<-function (proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1,
-    1),project=c(1,2))
+shapepca<-function (proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1,1),project=c(1,2),scores3d=FALSE,colour=2,axes3=FALSE)
 {
+
+if (scores3d==TRUE){
+sz<-max(proc$rawscores[,max(pcno)]) - min(proc$rawscores[,max(pcno)])
+    spheres3d( proc$rawscores[,pcno] , radius=sz/30, col=colour)
+if (axes3){
+axes3d()
+}
+}
+        
+if (scores3d==FALSE){
     m <- dim(proc$mshape)[2]
-    if ((m == 2)||(type!="m")) {
+    if ((m == 2)) {
         out <- defplotsize2(proc$rotated,project=project)
         xl <- out$xl
         yl <- out$yl
@@ -169,6 +211,27 @@ shapepca<-function (proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1
             plot3Dpca(proc, pcno[i])
         }
     }
+       if ((m == 3)&&(type!="m")) {
+k<-dim(proc$mshape)[1]
+sz<- centroid.size( proc$mshape )/sqrt(k) /30
+        spheres3d(proc$mshape,radius=sz, col=colour)
+if (axes3){
+axes3d()
+}
+
+        for (i in 1:length(pcno)) {
+  pc<- proc$mshape + 3*mag*proc$pcasd[i]*cbind(proc$pcar[1:k,i],
+           proc$pcar[(k+1):(2*k),i],proc$pcar[(2*k+1):(3*k),i])
+for (j in 1:k){
+lines3d(rbind(proc$mshape[j,],pc[j,]),col=i)
+}
+ 
+        }
+    }
+}
+
+
+
 }
 
 
