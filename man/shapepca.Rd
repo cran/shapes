@@ -28,7 +28,8 @@ shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1), proje
   \item{scores3d}{Logical. If TRUE then a 3D scatterplot of the first 3 raw PC scores with 
 labels in `pcno' is given, instead 
 of the default plot of the mean and PC vectors.}
-  \item{colour}{Colour of the spheres used in plotting.}
+  \item{colour}{Colour of the spheres used in plotting. Default colour = 2 (red). 
+If a vector is given then the points are coloured in that order.}
   \item{axes3}{Logical. If TRUE then the axes are plotted in a 3D plot.}
 }
 \details{The mean and PCs are plotted. 

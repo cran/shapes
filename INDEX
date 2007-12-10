@@ -20,7 +20,6 @@ resampletest            Tests for 2D mean shape difference, including
 riemdist                Riemannian shape distance
 schizophrenia.dat       Bookstein's schizophrenia data
 shapepca                Principal components for shape
-shapepca3d              Plot PCs for 3D data
 shapes3d                Plot 3D data
 sooty.dat               Sooty mangabey data
 testmeanshapes          Tests for mean shape difference

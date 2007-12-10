@@ -11,7 +11,8 @@ displayed (in order 1 to n). loop > 0 is suitable when a time-series of shapes
 is available. loop = 0 gives a plot of all the observations on the same figure.
 }
 \item{type}{Type of plot: "p" points, "l" lines}
-\item{colour}{Colour of points (default colour = 2 (red))}
+\item{colour}{Colour of points (default colour = 2 (red)). If a vector is given then the points 
+are coloured in that order.}
 \item{joinline}{Join the numbered landmarks by lines}
 \item{axes3}{Logical. If TRUE then plot the axes.}
 }

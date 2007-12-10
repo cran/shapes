@@ -4,7 +4,7 @@
 # written by Ian Dryden - suitable for use in R
 # (c) Ian Dryden, University of Nottingham, 2000-2007
 #
-#          Version 1.1-0  29 October 2007
+#          Version 1.1-1  10 December 2007
 #
 #----------------------------------------------------------------------
 #
@@ -31,50 +31,6 @@ y[,,i]<-x[,,i]%*%Rx%*%Ry%*%Rz
 y
 }
 
-shapepca3d<-function(procreg,pcno=c(1,2,3)){
-for (i in 1:length(pcno)){
-plotpca3d(procreg,pcno[i])
-}
-}
-
-
-
-
-plotpca3d<-function (procreg, pcno=1)
-{
-par(mfrow=c(1,1))
-out<-defplotsize3(procreg$rotated)
-xl<-out$xl
-xu<-out$xu
-yl<-out$yl
-yu<-out$yu
-zl<-out$zl
-zu<-out$zu
-
-    k <- dim(procreg$mshape)[1]
-subx<-1:k
-suby<-(k+1):(2*k)
-subz<-(2*k+1):(3*k)
-
-evec<-cbind(procreg$pcar[subx,pcno],procreg$pcar[suby,pcno],procreg$pcar[subz,pcno])
-
-
-    for (j in 1:10) {
-        for (ii in -12:12) {
-            mag <- ii/4
-scatterplot3d(procreg$mshape+mag*evec*procreg$pcasd[pcno],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
-  axis=TRUE,highlight.3d=TRUE)
-title(pcno)
-}
-      for (ii in -11:11) {
-            mag <- -ii/4
-scatterplot3d(procreg$mshape+mag*evec*procreg$pcasd[pcno],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
-  axis=TRUE)
-title(pcno)
-        }
-    }
-}
-
 
 shapes3d<-function(x,loop=0,type="p",colour=2,joinline=c(1:1),axes3=FALSE){
 
@@ -84,6 +40,7 @@ xt[,,1]<-x
 x<-xt 
 }
 if (loop == 0){
+
 k<-dim(x)[1]
 sz<- centroid.size( x[,,1] )/sqrt(k) /30
 plotshapes3d(x,type=type,colour=colour,size=sz,joinline=joinline)
@@ -187,6 +144,7 @@ shapepca<-function (proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1
 {
 
 if (scores3d==TRUE){
+
 sz<-max(proc$rawscores[,max(pcno)]) - min(proc$rawscores[,max(pcno)])
     spheres3d( proc$rawscores[,pcno] , radius=sz/30, col=colour)
 if (axes3){
@@ -204,14 +162,22 @@ if (scores3d==FALSE){
         plotpca(proc, pcno, type, mag, xl, yl, width, joinline,project)
     }
     if ((m == 3)&&(type=="m")) {
-        plot3Dmean(proc)
-        cat("Mean shape \n")
+
+#        plot3Dmean(proc)
+#        cat("Mean shape \n")
+#        for (i in 1:length(pcno)) {
+#            cat("PC ", pcno[i], " \n")
+#            plot3Dpca(proc, pcno[i])
+#        }
+
         for (i in 1:length(pcno)) {
             cat("PC ", pcno[i], " \n")
-            plot3Dpca(proc, pcno[i])
+plotpca3d(proc,pcno[i])
         }
+
     }
        if ((m == 3)&&(type!="m")) {
+
 k<-dim(proc$mshape)[1]
 sz<- centroid.size( proc$mshape )/sqrt(k) /30
         spheres3d(proc$mshape,radius=sz, col=colour)
@@ -219,7 +185,7 @@ if (axes3){
 axes3d()
 }
 
-        for (i in 1:length(pcno)) {
+        for (i in pcno ) {
   pc<- proc$mshape + 3*mag*proc$pcasd[i]*cbind(proc$pcar[1:k,i],
            proc$pcar[(k+1):(2*k),i],proc$pcar[(2*k+1):(3*k),i])
 for (j in 1:k){
@@ -232,6 +198,44 @@ lines3d(rbind(proc$mshape[j,],pc[j,]),col=i)
 
 
 
+}
+
+
+############
+
+plotpca3d<-function (procreg, pcno=1)
+{
+par(mfrow=c(1,1))
+out<-defplotsize3(procreg$rotated)
+xl<-out$xl
+xu<-out$xu
+yl<-out$yl
+yu<-out$yu
+zl<-out$zl
+zu<-out$zu
+
+    k <- dim(procreg$mshape)[1]
+subx<-1:k
+suby<-(k+1):(2*k)
+subz<-(2*k+1):(3*k)
+
+evec<-cbind(procreg$pcar[subx,pcno],procreg$pcar[suby,pcno],procreg$pcar[subz,pcno])
+
+
+    for (j in 1:10) {
+        for (ii in -12:12) {
+            mag <- ii/4
+scatterplot3d(procreg$mshape+mag*evec*procreg$pcasd[pcno],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
+  axis=TRUE,highlight.3d=TRUE)
+title(pcno)
+}
+      for (ii in -11:11) {
+            mag <- -ii/4
+scatterplot3d(procreg$mshape+mag*evec*procreg$pcasd[pcno],xlim=c(xl,xu),ylim=c(yl,yu),zlim=c(zl,zu),xlab="x",ylab="y",zlab="z",
+  axis=TRUE)
+title(pcno)
+        }
+    }
 }
 
 
@@ -1025,81 +1029,93 @@ I2mat<-function(Be)
 	tem <- rbind(temp, temp1)
 	tem
 }
-tpsgrid<-function(TT, YY, xbegin, ybegin, xwidth, opt=2, ext=0.1, ngrid=22)
+
+tpsgrid<-function (TT, YY, xbegin = -999, ybegin = -999, xwidth= -999, opt = 2, ext = 0.1,
+    ngrid = 22,cex=1,pch=20,col=2)
 {
-#
-#TPS deformation from TT to YY, grid has (xbegin,ybegin) in bottom left corner
-# width of grid is xwidth
-# opt = 1 just the grid on YY is drawn
-# opt = 2 the starting grid on TT and the grid on YY are drawn
-# ext = extent to which outside axes are larger than width (ext = 0.1)
-# is usually reasonable
-# ngrid = no. of lines in the approx. square grid is ngrid * (ngrid -1) 
-#     and ngrid is reduced by 1 if ngrid is odd
-	k <- nrow(TT)
-	xstart <- xbegin
-	ystart <- ybegin
-	ngrid <- trunc(ngrid/2) * 2
-	kx <- ngrid
-	ky <- ngrid - 1
-	l <- kx * ky
-	step <- xwidth/(kx - 1)
-	r <- 0
-	X <- rep(0, times = kx)
-	Y2 <- rep(0, times = ky)
-	for(p in 1:kx) {
-		ystart <- ybegin
-		xstart <- xstart + step
-		for(q in 1:ky) {
-			ystart <- ystart + step
-			r <- r + 1
-			X[r] <- xstart
-			Y2[r] <- ystart
-		}
-	}
-	refc <- matrix(c(X, Y2), kx * ky, 2)
-	TPS <- bendingenergy(TT)
-	gamma11 <- TPS$gamma11
-	gamma21 <- TPS$gamma21
-	gamma31 <- TPS$gamma31
-	W <- gamma11 %*% YY
-	ta <- t(gamma21 %*% YY)
-	B <- gamma31 %*% YY
-	WtY <- t(W) %*% YY
-	trace <- c(0)
-	for(i in 1:2) {
-		trace <- trace + WtY[i, i]
-	}
-	benergy <- (1/(8 * pi)) * trace
-	l <- kx * ky
-	phi <- matrix(0, l, 2)
-	s <- matrix(0, k, 1)
-	for(i in 1:l) {
-		s <- matrix(0, k, 1)
-		for(m in 1:k) {
-			s[m,  ] <- sigma(refc[i,  ] - TT[m,  ])
-		}
-		phi[i,  ] <- ta + t(B) %*% refc[i,  ] + t(W) %*% s
-	}
-	par(pty = "s")
-	if(opt == 2) {
-		order <- linegrid(refc, kx, ky)
-		plot(order[1:l, 1], order[1:l, 2], type = "l", xlim = c(xbegin - 
-			xwidth * ext, xbegin + xwidth * (1 + ext)), ylim = c(
-			ybegin - (xwidth * ky)/kx * ext, ybegin + (xwidth * ky)/
-			kx * (1 + ext)), xlab = " ", ylab = " ")
-		lines(order[(l + 1):(2 * l), 1], order[(l + 1):(2 * l), 2], 
-			type = "l")
-		points(TT, cex = 2)
-	}
-	order <- linegrid(phi, kx, ky)
-	plot(order[1:l, 1], order[1:l, 2], type = "l", xlim = c(xbegin - xwidth *
-		ext, xbegin + xwidth * (1 + ext)), ylim = c(ybegin - (xwidth * 
-		ext * ky)/kx, ybegin + (xwidth * (1 + ext) * ky)/kx), xlab = 
-		" ", ylab = " ")
-	lines(order[(l + 1):(2 * l), 1], order[(l + 1):(2 * l), 2], type = "l")
-	points(YY, cex = 2)
+    k <- nrow(TT)
+if (xwidth== -999){
+bb<-array(TT,c(dim(TT),1))
+aa<-defplotsize2(bb)
+xwidth<-aa$width
 }
+if (xbegin== -999){
+bb<-array(TT,c(dim(TT),1))
+aa<-defplotsize2(bb)
+xbegin<-aa$xl
+}
+if (ybegin== -999){
+bb<-array(TT,c(dim(TT),1))
+aa<-defplotsize2(bb)
+ybegin<-aa$yl
+}
+    xstart <- xbegin
+    ystart <- ybegin
+    ngrid <- trunc(ngrid/2) * 2
+    kx <- ngrid
+    ky <- ngrid - 1
+    l <- kx * ky
+    step <- xwidth/(kx - 1)
+    r <- 0
+    X <- rep(0, times = kx)
+    Y2 <- rep(0, times = ky)
+    for (p in 1:kx) {
+        ystart <- ybegin
+        xstart <- xstart + step
+        for (q in 1:ky) {
+            ystart <- ystart + step
+            r <- r + 1
+            X[r] <- xstart
+            Y2[r] <- ystart
+        }
+    }
+    refc <- matrix(c(X, Y2), kx * ky, 2)
+    TPS <- bendingenergy(TT)
+    gamma11 <- TPS$gamma11
+    gamma21 <- TPS$gamma21
+    gamma31 <- TPS$gamma31
+    W <- gamma11 %*% YY
+    ta <- t(gamma21 %*% YY)
+    B <- gamma31 %*% YY
+    WtY <- t(W) %*% YY
+    trace <- c(0)
+    for (i in 1:2) {
+        trace <- trace + WtY[i, i]
+    }
+    benergy <- (1/(8 * pi)) * trace
+    l <- kx * ky
+    phi <- matrix(0, l, 2)
+    s <- matrix(0, k, 1)
+    for (i in 1:l) {
+        s <- matrix(0, k, 1)
+        for (m in 1:k) {
+            s[m, ] <- sigma(refc[i, ] - TT[m, ])
+        }
+        phi[i, ] <- ta + t(B) %*% refc[i, ] + t(W) %*% s
+    }
+    par(pty = "s")
+    if (opt == 2) {
+        par(mfrow=c(1,2))
+        order <- linegrid(refc, kx, ky)
+        plot(order[1:l, 1], order[1:l, 2], type = "l", xlim = c(xbegin -
+            xwidth * ext, xbegin + xwidth * (1 + ext)), ylim = c(ybegin -
+            (xwidth * ky)/kx * ext, ybegin + (xwidth * ky)/kx *
+            (1 + ext)), xlab = " ", ylab = " ")
+        lines(order[(l + 1):(2 * l), 1], order[(l + 1):(2 * l),
+            2], type = "l")
+        points(TT, cex = cex,pch=pch,col=col)
+    }
+    order <- linegrid(phi, kx, ky)
+    plot(order[1:l, 1], order[1:l, 2], type = "l", xlim = c(xbegin -
+        xwidth * ext, xbegin + xwidth * (1 + ext)), ylim = c(ybegin -
+        (xwidth * ext * ky)/kx, ybegin + (xwidth * (1 + ext) *
+        ky)/kx), xlab = " ", ylab = " ")
+    lines(order[(l + 1):(2 * l), 1], order[(l + 1):(2 * l), 2],
+        type = "l")
+    points(YY, cex = cex,pch=pch,col=col)
+}
+#
+#
 V<-function(z)
 {
 #input complex k -vector
