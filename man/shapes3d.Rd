@@ -2,7 +2,7 @@
 \alias{shapes3d}
 \title{Plot 3D data}
 \description{Plot the landmark configurations from a 3D dataset}
-\usage{shapes3d(x,loop=0,type="p", colour = 2, joinline=c(1:1), axes3=FALSE )}
+\usage{shapes3d(x,loop=0,type="p", color = 2, joinline=c(1:1), axes3=FALSE, rglopen=TRUE)}
 \arguments{
 \item{x}{An array of size k x 3 x n, where k is the number of landmarks
 and n is the number of observations}
@@ -10,11 +10,13 @@ and n is the number of observations}
 displayed (in order 1 to n). loop > 0 is suitable when a time-series of shapes
 is available. loop = 0 gives a plot of all the observations on the same figure.
 }
-\item{type}{Type of plot: "p" points, "l" lines}
-\item{colour}{Colour of points (default colour = 2 (red)). If a vector is given then the points 
+\item{type}{Type of plot: "p" points, "dots" dots (quicker for large plots), "l" dots and  
+lines though landmarks 1:k if `joinline' not stated}
+\item{color}{Colour of points (default color = 2 (red)). If a vector is given then the points 
 are coloured in that order.}
 \item{joinline}{Join the numbered landmarks by lines}
 \item{axes3}{Logical. If TRUE then plot the axes.}
+\item{rglopen}{Logical. If TRUE then open a new RGL window, if FALSE then plot in current window.}
 }
 \value{
 None
@@ -27,7 +29,7 @@ Statistical Shape Analysis. Wiley, Chichester.
 
 \examples{
 data(dna.dat)
-shapes3d(dna.dat,loop=0)
+shapes3d(dna.dat)
 }
 
 \keyword{multivariate}

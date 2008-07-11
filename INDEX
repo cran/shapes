@@ -1,4 +1,5 @@
 bookstein2d             Bookstein's baseline registration for 2D data
+brains                  Brain landmark data
 digit3.dat              Digit 3 data
 dna.dat                 DNA data
 gorf.dat                Female gorilla data
@@ -12,15 +13,19 @@ pongof.dat              Female orang utan data
 pongom.dat              Male orang utan data
 procGPA                 Generalised Procrustes analysis
 procOPA                 Ordinary Procrustes analysis
+procWGPA                Weighted Procrustes analysis
 qcet2.dat               Control T2 mouse vertabrae data
 qlet2.dat               Large T2 mouse vertabrae data
 qset2.dat               Small T2 mouse vertabrae data
-resampletest            Tests for 2D mean shape difference, including
-                        bootstrap and permutation tests
+resampletest            Tests for mean shape difference using complex
+                        arithmetic, including bootstrap and permutation
+                        tests.
 riemdist                Riemannian shape distance
+rigidbody               Rigid body transformations
 schizophrenia.dat       Bookstein's schizophrenia data
-shapepca                Principal components for shape
+shapepca                Principal components analysis for shape
 shapes3d                Plot 3D data
 sooty.dat               Sooty mangabey data
-testmeanshapes          Tests for mean shape difference
+testmeanshapes          Tests for mean shape difference, including
+                        permutation and bootstrap tests
 tpsgrid                 Thin-plate spline transformation grids

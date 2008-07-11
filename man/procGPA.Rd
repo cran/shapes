@@ -7,9 +7,9 @@ rotation and scaling. Reflection invariance can also be chosen, and registration
 components, and some summary statistics. 
 }
 \usage{
-procGPA(x, scale = TRUE, reflect = FALSE, eigen2d = TRUE, 
-tol1 = 1e-05, tol2 = tol1, approxtangent = TRUE, proc.output=FALSE, 
-distances=TRUE, pcaoutput=TRUE)
+procGPA(x, scale = TRUE, reflect = FALSE, eigen2d = FALSE, 
+tol1 = 1e-05, tol2 = tol1, tangentresiduals = TRUE, proc.output=FALSE, 
+distances=TRUE, pcaoutput=TRUE, alpha=0, affine=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -20,7 +20,7 @@ is the number of dimensions, and n is the sample size. }
   \item{reflect}{Logical quantity indicating if reflection 
   is required}
   \item{eigen2d}{Logical quantity indicating if complex eigenanalysis 
-  should be used to calculate Procrustes mean for 2D case when 
+  should be used to calculate Procrustes mean for the particular 2D case when 
   scale=TRUE, reflect=FALSE} 
    \item{tol1}{Tolerance for optimal rotation for the iterative 
 algorithm: tolerance on the mean sum of squares 
@@ -28,14 +28,23 @@ algorithm: tolerance on the mean sum of squares
   \item{tol2}{tolerance for rescale/rotation step for the iterative 
 algorithm: tolerance on the mean sum of squares 
 (divided by size of mean squared) between successive iterations}
-\item{approxtangent}{Logical quantity indicating if the approximate tangent 
-coordinates (Procrustes residuals) should be given if TRUE, or the partial 
-tangent coordinates (see tan below) if FALSE}
+\item{tangentresiduals}{Logical quantity indicating if Procrustes residuals 
+should be used for analysis. If tangentresiduals=TRUE for the shape (scale=TRUE) case these are 
+approximate tangent space coordinates, and for the size-and-shape 
+(scale=FALSE) case these are exact tangent space coordinates. 
+If tangentresiduals=FALSE then the partial tangent shape coordinates (see tan below).}
 \item{proc.output}{Logical quantity indicating if printed output during the
 iterations of the Procrustes GPA algorithm should be given} 
 \item{distances}{Logical quantity indicating if shape distances and sizes 
 should be calculated}
 \item{pcaoutput}{Logical quantity indicating if PCA should be carried out} 
+\item{alpha}{The parameter alpha used for relative warps analysis, where alpha 
+is the power of the bending energy matrix. 
+If alpha = 0 then standard Procrustes PCA is carried out. If alpha = 1 then large scale variations 
+are emphasized, if alpha = -1 then small scale variations are emphasised. 
+Requires m=2 and m=3 dimensional data if alpha $!=$ 0.}
+\item{affine}{Logical. If TRUE then only the affine subspace of shape variability is 
+considered.} 
 }
 \value{A list with components
 \item{k}{no of landmarks}
@@ -43,10 +52,10 @@ should be calculated}
 \item{n}{sample size}
 \item{mshape}{Procrustes mean shape. Note this is unit size if complex 
 eigenanalysis used, but on the scale of the data if iterative GPA is used.} 
-\item{tan}{If approxtangent=TRUE this is the mk x n matrix of 
-Procrustes approximate tangent coordinates $X_i^P$ - Xbar , where Xbar = mean($X_i^P$), which are also known as the 
-Procrustes residuals. If approxtangent=FALSE this is 
-the km-m x n matrix of partial Procrustes tangent coordinates
+\item{tan}{If tangentresiduals=TRUE this is the mk x n matrix of 
+Procrustes residuals $X_i^P$ - Xbar , where Xbar = mean($X_i^P$). 
+If approxtangent=FALSE this is 
+the km-m x n matrix of partial Procrustes tangent shape coordinates
 with pole given by the preshape of the Procrustes mean}
 \item{rotated}{the k x m x n array of full Procrustes 
 rotated data} 
@@ -54,13 +63,15 @@ rotated data}
 covariance Sv of tan} 
 \item{pcasd}{the square roots of eigenvalues of Sv using tan (s.d.'s of PCs)}
 \item{percent}{the percentage of variability explained by the PCs using
-tan}
+tan. If alpha $!=0$ then it is the percent of non-affine variation of the relative warp scores. 
+If affine is TRUE it is the percentage of total shape variability of each affine 
+component.}
 \item{size}{the centroid sizes of the configurations}
 \item{scores}{standardised PC scores (each with unit variance) using 
 tan} 
 \item{rawscores}{raw PC scores using tan} 
-\item{rho}{Kendall's Riemannian distance $\rho$ to the mean shape}
-\item{rmsrho}{r.m.s. of rho} 
+\item{rho}{Kendall's Riemannian distance rho to the mean shape}
+\item{rmsrho}{root mean square (r.m.s.) of rho} 
 \item{rmsd1}{r.m.s. of full Procrustes distances to the mean shape $d_F$}
 }
 \references{Dryden, I.L. and Mardia, K.V. (1998). Statistical 

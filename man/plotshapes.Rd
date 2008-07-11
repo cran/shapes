@@ -7,7 +7,7 @@ Plots configurations. Either one or two groups of observations
 can be plotted on the same scale. 
 }
 \usage{
-plotshapes(A, B = 0, joinline = c(1, 1),orthproj=c(1,2))
+plotshapes(A, B = 0, joinline = c(1, 1),orthproj=c(1,2),color=1,symbol=1)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -19,6 +19,10 @@ plotshapes(A, B = 0, joinline = c(1, 1),orthproj=c(1,2))
   \item{orthproj}{A vector stating which two orthogonal projections will be
   used. For example, for m=3 dimensional data: X-Y projection given by c(1,2) 
   (default), X-Z projection given by c(1,3), Y-Z projection given by c(2,3).}
+  \item{color}{Colours for points. Can be a vector, e.g. 1:k gives each landmark
+  a different colour for the specimens}
+  \item{symbol}{Plotting symbols. Can be a vector, e.g. 1:k gives each landmark
+  a different symbol for the specimens}
 } 
 \value{
 Just graphical output

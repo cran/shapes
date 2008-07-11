@@ -2,9 +2,11 @@
 #
 # Statistical shape analysis routines
 # written by Ian Dryden - suitable for use in R
-# (c) Ian Dryden, University of Nottingham, 2000-2007
+# (c) Ian Dryden, University of Nottingham
+#                 University of South Carolina
+#                         2000-2009
 #
-#          Version 1.1-1  10 December 2007
+#          Version 1.1-2  16 April 2009 
 #
 #----------------------------------------------------------------------
 #
@@ -13,7 +15,895 @@
 #
 #
 #
-####################
+###########################################################################
+iglogl<- function( x ,lam, nlam){
+gamma<- abs(x[1])
+alpha<- gamma/ mean(1/lam[1:nlam])
+ll <-  - (gamma+1) * sum( log(lam[1:nlam] )) - alpha * sum (1/lam[1:nlam]) +
+              nlam * gamma *log(alpha) - nlam * lgamma (gamma) 
+-ll
+}
+
+
+procWGPA<- function( x, fixcovmatrix=FALSE, initial="Identity", maxiterations=10, scale=TRUE, prior="Exponential",diagonal=TRUE,
+  sampleweights="Equal"){
+X<-x
+priorargument<-prior
+alpha<-"not estimated"
+gamma<-"not estimated"
+k<-dim(X)[1]
+n<-dim(X)[3]
+m<-dim(X)[2]
+
+if (initial[1]=="Identity"){
+Sigmak <- diag(k)
+}
+else{
+if (initial[1]=="Rawdata"){
+tol<-0.0000000001
+if (m==2){
+Sigmak<- diag( diag(var( t(X[,1,])))+diag(var( t(X[,2,]))) )/2 + tol
+}
+if (m==3){
+Sigmak<- diag( diag(var( t(X[,1,])))+diag(var( t(X[,2,])))+diag(var( t(X[,3,]))) )/3 + tol
+}
+}
+else
+{
+Sigmak <- initial
+}
+}
+
+mu<-procGPA(X,scale=scale)$mshape
+
+
+
+cat("Iteration 1 \n")
+
+if (fixcovmatrix[1]!=FALSE){
+Sigmak <- fixcovmatrix
+}
+
+ans<-procWGPA1(X,mu,metric=Sigmak,scale=scale,sampleweights=sampleweights)
+
+
+if ((maxiterations>1)&&(fixcovmatrix[1]==FALSE)){
+
+ans0<-ans
+dif <- 999999
+it<-1
+while ((dif > 0.00001)&&(it< maxiterations)){
+
+it <- it + 1
+if (it==2){
+cat("Differences in norm of Sigma estimates... \n ")
+}
+
+if (prior[1]=="Identity"){
+prior <- diag(k)
+}
+
+if (prior[1]=="Inversegamma"){
+lam <- eigen(ans$Sigmak)$values
+nlam<- min( c( n*m-m-3, k-3 ) )
+mu <- mean(1/lam[1:( nlam)])
+alpha <- 1/mu
+out <- nlm( iglogl, p=c(1) ,lam=lam, nlam=nlam)
+#print(out)
+gamma <- abs(out$estimate[1])
+alpha<- gamma/ mean(1/lam[1:nlam])
+newmetric <- n*m/(n*m+2*(1+gamma))* ( ans$Sigmak + (2*alpha/(n*m))*diag(k) )
+#dif2<-999999
+#while (dif2> 0.000001){
+#old<-alpha
+#lam <- eigen(newmetric)$values
+#out <- nlm( iglogl, p=c(1) ,lam=lam, nlam=nlam)
+#gamma <- abs(out$estimate[1])
+#alpha<- gamma/ mean(1/lam[1:nlam])
+#newmetric <- n*m/(n*m+2*(1+gamma))*( ans$Sigmak + (2*alpha/(n*m))*diag(k) )
+#dif2<- abs(alpha- old)
+#print(dif2)
+#}
+}
+
+
+if (prior[1]=="Exponential"){
+lam <- eigen(ans$Sigmak)$values
+nlam<- min( c( n*m-m-2, k-2 ) )
+mu <- mean(1/lam[1:( nlam)])
+alpha <- 1/mu
+gamma<-1
+newmetric <- n*m/(n*m+2*(2))*( ans$Sigmak + (2*alpha/(n*m))*diag(k) )
+#dif2<-999999
+#while (dif2> 0.000001){
+#old<-alpha
+#newmetric <- n*m/(n*m+2*(2))*( ans$Sigmak + (2*alpha/(n*m))*diag(k) )
+#lam <- eigen(newmetric)$values
+#mu <- mean(1/lam[1:( nlam)])
+#alpha <- 1/mu
+#newmetric <- n*m/(n*m+2*(2))*( ans$Sigmak + (2*alpha/(n*m))*diag(k) )
+#dif2<- abs(alpha- old)
+#}
+}
+
+if (is.double(prior[1])){
+newmetric <- ( ans$Sigmak + prior )
+}
+
+
+
+if (diagonal==TRUE){
+newmetric<- diag(diag(newmetric))
+}
+
+if (fixcovmatrix[1]!=FALSE){
+newmetric <- fixcovmatrix
+}
+
+ans2<-procWGPA1(X, ans$mshape,  metric= newmetric ,scale=scale,sampleweights=sampleweights)
+plotshapes(ans2$rotated)
+dif<-norm( (ans$Sigmak - ans2$Sigmak) )
+ans<-ans2
+cat(c(it," ",dif," \n"))
+}
+}
+if ((priorargument[1]=="Exponential")||(priorargument[1]=="Inversegamma")){
+ans$alpha<-alpha
+ans$gamma<-gamma
+}
+cat(" \n")
+ans
+}
+
+
+
+
+
+procWGPA1 <- function( X, mu, metric="Identity", scale=TRUE, sampleweights="Equal"){
+
+
+
+k<-dim(X)[1]
+n<-dim(X)[3]
+m<-dim(X)[2]
+
+sum <- 0
+for (i in 1:n){
+sum <- sum + centroid.size(X[,,i])**2
+}
+size1 <- sqrt(sum)
+
+
+
+
+
+if (sampleweights[1]=="Equal"){
+sampleweights<- rep(1/n, times=n)
+}
+
+
+if (length(sampleweights)!= n){
+cat("Sample weight vector not of correct length \n")
+}
+
+
+if (metric[1]=="Identity"){
+Sigmak <- diag(k)
+}
+else{
+Sigmak <- metric
+}
+
+eig<-eigen(Sigmak,symmetric=TRUE)
+
+Sighalf <- eig$vectors %*% diag (sqrt(abs(eig$values)))%*%t(eig$vectors)
+Siginvhalf <- eig$vectors %*% diag(1/sqrt(abs(eig$values)))%*%t(eig$vectors)
+Siginv<-eig$vectors %*% diag (1/(eig$values))%*%t(eig$vectors)
+
+one <- matrix(rep(1,times=k),k,1)
+
+Xstar <- X
+
+
+
+for (i in 1:n){
+Xstar[,,i]<- Xstar[,,i]- one%*%t(one)%*%Siginv %*% Xstar[,,i]/
+                                     c( t(one)%*%Siginv%*%one )
+Xstar[,,i] <- Siginvhalf%*%Xstar[,,i]
+}
+
+mu<- mu - one%*%t(one)%*%Siginv %*% mu /c( t(one)%*%Siginv%*%one )
+
+
+ans<-procGPA(Xstar,eigen2d=FALSE)
+ans2<-ans
+
+dif3 <- 99999999
+while (dif3 > 0.00001){
+
+for (i in 1:n){
+old<-mu
+tem<- procOPA( Siginvhalf%*%mu , Xstar[,,i],scale=scale)
+Gammai<- tem$R
+betai <- tem$s
+#ci <- t(one)%*% Siginvhalf %*% X[,,i] %*% Gammai*betai/k
+#Yi <- Sighalf%*% ans$rotated[,,i] + Sighalf%*%one%*% ci
+#Zi <- Yi - one %*% t(one)%*% Siginv %*% Yi / c( t(one)%*%Siginv%*%one )
+
+Zi <- Sighalf%*% Xstar[,,i]%*%Gammai*betai
+ans2$rotated[,,i]<-Zi
+}
+
+sum2 <- 0
+for (i in 1:n){
+sum2 <- sum2 + centroid.size(ans2$rotated[,,i])**2
+}
+size2 <- sqrt(sum2)
+
+
+
+tem<-ans2$mshape*0
+for (i in 1:n){
+ans2$rotated[,,i] <- ans2$rotated[,,i]*size1/size2
+tem<-tem+ ans2$rotated[,,i]*sampleweights[i]/sum(sampleweights)
+}
+
+mu<- tem
+dif3<- riemdist( old,  mu)
+} 
+
+
+
+
+
+z<-ans2
+z$mshape <- tem
+
+    tan <- z$rotated[, 1, ] - z$mshape[, 1]
+    for (i in 2:m) {
+        tan <- rbind(tan, z$rotated[, i, ] - z$mshape[, i])
+    }
+    pca<-prcomp1(t(tan))
+    z$tan <- tan
+    npc <- 0
+    for (i in 1:length(pca$sdev)) {
+        if (pca$sdev[i] > 1e-07) {
+            npc <- npc + 1
+        }
+    }
+    z$scores <- pca$x
+    z$rawscores <- pca$x
+    z$stdscores <-pca$x
+    for (i in 1:npc) {
+        z$stdscores[, i] <- pca$x[, i]/pca$sdev[i]
+    }
+    z$pcar <- pca$rotation
+    z$pcasd <- pca$sdev
+    z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
+    
+    size <- rep(0, times = n)
+    rho <- rep(0, times = n)
+    x <- X
+    size <- apply(x, 3, centroid.size)
+    rho <- apply(x, 3, y <- function(x) {
+        riemdist(x, z$mshape)
+    })
+
+    z$rho <- rho
+    z$size <- size
+    z$rmsrho <- sqrt(mean(rho^2))
+    z$rmsd1 <- sqrt(mean(sin(rho)^2))
+   
+    z$k <- k
+    z$m <- m
+    z$n <- n
+
+
+tem<- matrix(0, k,k)
+
+for (i in 1:n){
+tem <- tem +  (z$rotated[,,i] - z$mshape)%*%t((z$rotated[,,i] - z$mshape))
+}
+tem<-tem/(n*m)
+    z$Sigmak <-  tem 
+
+
+return(z)
+}
+
+
+
+testmeanshapes <- function( A, B, resamples = 1000, replace=FALSE, scale=TRUE){
+if (replace==TRUE){
+out<-bootstraptest(A,B,resamples=resamples, scale=scale)
+}
+if (replace==FALSE){
+out<-permutationtest(A,B,nperms=resamples, scale=scale)
+}
+out
+}
+
+
+
+permutationtest2<-function (A, B, nperms = 1000, scale=scale)
+{
+    A1 <- A
+    A2 <- B
+mdim <- dim(A1)[2]
+    B <- nperms
+    nsam1 <- dim(A1)[3]
+    nsam2 <- dim(A2)[3]
+    pool<-procGPA( abind (A1, A2) , scale=scale)
+    permpool<-pool
+    Gtem <- Goodall( pool, nsam1, nsam2)
+    Htem <- Hotelling( pool, nsam1, nsam2)
+    Jtem <- James( pool, nsam1, nsam2, table=TRUE)
+    Ltem <- Lambdamin( pool, nsam1, nsam2)
+    Gumc <- Gtem$F
+    Humc <- Htem$F
+    Jumc <- Jtem$Tsq
+    Lumc <- Ltem$lambdamin
+    Gtabpval <- Gtem$pval
+    Htabpval <- Htem$pval
+    Jtabpval <- Jtem$pval
+    Ltabpval <- Ltem$pval
+    if (B > 0) {
+        Apool <- array(0, c(dim(A1)[1], dim(A1)[2], dim(A1)[3] +
+            dim(A2)[3]))
+        Apool[, , 1:nsam1] <- A1
+        Apool[, , (nsam1 + 1):(nsam1 + nsam2)] <- A2
+        out <- list(H = 0, H.pvalue = 0, H.table.pvalue = 0, J = 0, J.pvalue = 0, J.table.pvalue = 0,
+            G = 0, G.pvalue = 0, G.table.pvalue = 0)
+        Gu <- rep(0, times = B)
+        Hu <- rep(0, times = B)
+        Ju <- rep(0, times = B) 
+        Lu <- rep(0, times = B)       
+cat("Permutations - sampling without replacement: ")
+        cat(c("No of permutations = ", B, "\n"))
+        for (i in 1:B) {
+            if (i/100 == trunc(i/100)){
+            cat(c(i, " ")) }
+            select <- sample(1:(nsam1 + nsam2))
+            permpool$tan <- pool$tan[,select]
+            Gu[i] <- Goodall(permpool, nsam1, nsam2 )$F
+            Hu[i] <- Hotelling(permpool, nsam1, nsam2 )$F
+            Ju[i] <- James(permpool, nsam1, nsam2 )$Tsq        
+            Lu[i] <- Lambdamin(permpool, nsam1, nsam2 )$lambdamin      
+}
+        Gu <- sort(Gu)
+        numbig <- length(Gu[Gumc < Gu])
+        pvalG <- (1 + numbig)/(B + 1)
+        Lu <- sort(Lu)
+        numbig <- length(Lu[Lumc < Lu])
+        pvalL <- (1 + numbig)/(B + 1)
+        Ju <- sort(Ju)
+        numbig <- length(Ju[Jumc < Ju])
+        pvalJ <- (1 + numbig)/(B + 1)
+        Hu <- sort(Hu)
+        numbig <- length(Hu[Humc < Hu])
+        pvalH <- (1 + numbig)/(B + 1)
+        cat(" \n")
+        out$H <- Humc
+        out$H.pvalue <- pvalH
+        out$H.table.pvalue <- Htabpval
+        out$J <- Jumc
+        out$J.pvalue <- pvalJ
+        out$J.table.pvalue <- Jtabpval
+        out$G <- Gumc
+        out$G.pvalue <- pvalG
+        out$G.table.pvalue <- Gtabpval
+        out$L <- Lumc
+        out$L.pvalue <- pvalL
+        out$L.table.pvalue <- Ltabpval
+ }
+    if (B == 0) {
+        out <- list(H = 0, H.table.pvalue = 0, G = 0, G.table.pvalue = 0)
+        out$H <- Humc
+        out$H.table.pvalue <- Htabpval
+        out$J <- Jumc
+        out$J.table.pvalue <- Jtabpval
+        out$G <- Gumc
+        out$G.table.pvalue <- Gtabpval
+        out$L <- Lumc
+        out$L.table.pvalue <- Ltabpval
+}
+    out
+}
+
+
+bootstraptest<-function (A, B, resamples = 1000, scale=TRUE)
+{
+    A1 <- A
+    A2 <- B
+mdim <- dim(A1)[2]
+    B <- resamples
+    nsam1 <- dim(A1)[3]
+    nsam2 <- dim(A2)[3]
+    pool<-procGPA( abind (A1, A2) ,scale=scale , tangentresiduals=TRUE)
+    bootpool<-pool
+    Gtem <- Goodall( pool, nsam1, nsam2)
+    Htem <- Hotelling( pool, nsam1, nsam2)
+    Jtem <- James( pool, nsam1, nsam2, table=TRUE)
+    Ltem <- Lambdamin( pool, nsam1, nsam2 )
+    Gumc <- Gtem$F
+    Humc <- Htem$F
+    Jumc <- Jtem$Tsq
+    Lumc <- Ltem$lambdamin
+    Gtabpval <- Gtem$pval
+    Htabpval <- Htem$pval
+    Jtabpval <- Jtem$pval
+    Ltabpval <- Ltem$pval
+    if (B > 0) {
+        Apool <- array(0, c(dim(A1)[1], dim(A1)[2], dim(A1)[3] +
+            dim(A2)[3]))
+        Apool[, , 1:nsam1] <- A1
+        Apool[, , (nsam1 + 1):(nsam1 + nsam2)] <- A2
+        out <- list(H = 0, H.pvalue = 0, H.table.pvalue = 0,J = 0, J.pvalue = 0, J.table.pvalue = 0,
+            G = 0, G.pvalue = 0, G.table.pvalue = 0)
+        Gu <- rep(0, times = B)
+        Hu <- rep(0, times = B)
+       Ju <- rep(0, times = B)
+       Lu <- rep(0, times = B)
+pool2<-pool
+pool2$tan[,1:nsam1] <- pool$tan[,1:nsam1] - apply(pool$tan[,1:nsam1],1,mean)
+pool2$tan[,(nsam1+1):(nsam1+nsam2)] <- pool$tan[,(nsam1+1):(nsam1+nsam2)] - 
+                    apply(pool$tan[,(nsam1+1):(nsam1+nsam2)],1,mean)
+
+
+        cat("Bootstrap - sampling with replacement within each group under H0: ")
+        cat(c("No of resamples = ", B, "\n"))
+        for (i in 1:B) {
+            if (i/100 == trunc(i/100)){
+            cat(c(i, " ")) }
+            select1 <- sample(1:nsam1,replace=TRUE)
+            select2 <- sample((nsam1+1):(nsam1+nsam2),replace=TRUE)
+            bootpool$tan <- pool2$tan[,c(select1,select2)]
+            Gu[i] <- Goodall( bootpool, nsam1, nsam2 )$F
+            Hu[i] <- Hotelling( bootpool, nsam1, nsam2 )$F
+            Ju[i] <- James( bootpool, nsam1, nsam2 )$Tsq
+            Lu[i] <- Lambdamin( bootpool, nsam1, nsam2 )$lambdamin
+       }
+        Gu <- sort(Gu)
+        numbig <- length(Gu[Gumc < Gu])
+        pvalG <- (1 + numbig)/(B + 1)
+        Ju <- sort(Ju)
+        numbig <- length(Ju[Jumc < Ju])
+        pvalJ <- (1 + numbig)/(B + 1)
+        Hu <- sort(Hu)
+        numbig <- length(Hu[Humc < Hu])
+        pvalH <- (1 + numbig)/(B + 1)
+        numbig <- length(Lu[Lumc < Lu])
+        pvalL <- (1 + numbig)/(B + 1)
+       cat(" \n")
+        out$H <- Humc
+        out$H.pvalue <- pvalH
+        out$H.table.pvalue <- Htabpval
+        out$J <- Jumc
+        out$J.pvalue <- pvalJ
+        out$J.table.pvalue <- Jtabpval
+        out$G <- Gumc
+        out$G.pvalue <- pvalG
+        out$G.table.pvalue <- Gtabpval
+        out$L <- Lumc
+        out$L.pvalue <- pvalL
+        out$L.table.pvalue <- Ltabpval
+}
+    if (B == 0) {
+        out <- list(H = 0, H.table.pvalue = 0, G = 0, G.table.pvalue = 0, J = 0, J.table.pvalue = 0)
+        out$H <- Humc
+        out$H.table.pvalue <- Htabpval
+        out$J <- Jumc
+        out$J.table.pvalue <- Jtabpval
+        out$G <- Gumc
+        out$G.table.pvalue <- Gtabpval
+        out$L <- Lumc
+        out$L.table.pvalue <- Ltabpval
+}
+    out
+}
+
+Lambdamin<-function( pool , n1, n2, p=0){
+censiz<-centroid.size(pool$mshape)
+   tan1<- pool$tan[,1:n1]
+   tan2<-pool$tan[,(n1+1):(n1+n2)]
+
+
+
+   kt <- dim(tan1)[1]
+   n <- n1+n2
+   k<-pool$k
+   m<-pool$m
+
+
+
+
+   if (p == 0){
+    p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+}
+
+
+if (m == 2){
+mu<- c( pool$mshape[,1], pool$mshape[,2]) 
+}
+if (m == 3){
+mu<- c( pool$mshape[,1], pool$mshape[,2],pool$mshape[,3]) 
+}
+
+
+dd <- kt
+
+
+X1 <- tan1*0
+X2 <- tan2*0
+S1 <- matrix (0, dd, dd)
+S2 <- matrix (0, dd, dd)
+
+ for (i in 1:n1){
+  X1[,i] <- (mu + tan1[,i])/norm(mu + tan1[,i])
+S1 <- S1 + X1[,i]%*%t(X1[,i])
+}
+ for (i in 1:n2){
+  X2[,i] <- (mu + tan2[,i])/norm(mu + tan2[,i])
+S2 <- S2 + X2[,i]%*%t(X2[,i])
+}
+
+sum1<- apply( X1, 1, sum)
+sum2<- apply( X2, 1, sum)
+mean1 <- sum1/norm(sum1)
+mean2 <- sum2/norm(sum2)
+
+
+bb1 <- mean1[1: (dd-1)]
+cc1 <- mean1[dd]
+bb2 <- mean2[1: (dd-1)]
+cc2 <- mean2[dd]
+
+
+
+A1 <- cc1/abs(cc1) * diag(dd-1) - cc1 / ( abs(cc1) + cc1**2) * bb1 %*%t(bb1) 
+M1 <- cbind(A1,-bb1)
+A1 <- cc2/abs(cc2) * diag(dd-1) - cc2 / ( abs(cc2) + cc2**2) * bb2 %*%t(bb2) 
+M2 <- cbind(A1,-bb2)
+
+G1 <- matrix (0, dd-1, dd-1)
+G2 <- matrix (0, dd-1, dd-1)
+
+
+
+
+
+for (iu in 1:(dd-1)){
+for (iv in iu:(dd-1)){
+G1[iu,iv] <- G1[iu,iv] + t((t(M1))[,iu])%*%S1%*%(t(M1))[,iv]
+G1[iv,iu]<-G1[iu,iv]
+G2[iu,iv] <- G2[iu,iv] + t((t(M2))[,iu])%*%S2%*%(t(M2))[,iv]
+G2[iv,iu]<-G2[iu,iv]
+}
+}
+G1 <- G1/n1 / norm(sum1/n1)**2
+G2 <- G2/n2 / norm(sum2/n2)**2
+
+
+    eva1 <- eigen(G1, symmetric = TRUE,EISPACK=TRUE)
+    pcar1 <- eva1$vectors[, 1:p]
+    pcasd1 <- sqrt(abs(eva1$values[1:p]))
+    eva2 <- eigen(G2, symmetric = TRUE,EISPACK=TRUE)
+    pcar2 <- eva2$vectors[, 1:p]
+    pcasd2 <- sqrt(abs(eva2$values[1:p]))
+    if ((pcasd1[p] < 1e-06)||(pcasd2[p] < 1e-06)) {
+        offset <- 1e-06
+        cat("*")
+        pcasd1 <- sqrt(pcasd1^2 + offset)
+        pcasd2 <- sqrt(pcasd2^2 + offset)
+    }
+    Ahat1 <- n1*t(M1)%*%(pcar1%*%diag(1/pcasd1**2)%*%t(pcar1))%*%M1
+    Ahat2 <- n2*t(M2)%*%(pcar2%*%diag(1/pcasd2**2)%*%t(pcar2))%*%M2
+    Ahat <- (n/n1*Ahat1 + n/n2*Ahat2)
+    eva <- eigen(Ahat, symmetric = TRUE,EISPACK=TRUE)
+
+
+
+#print(eva$values)
+    lambdamin <- eva$values[p+1]
+
+    pval <- 1 - pchisq(lambdamin, p+1 )
+#######
+    z<-list()
+    z$pval <- pval
+    z$df <- p
+    z$lambdamin <- lambdamin
+
+    return(z)
+}
+
+Goodall<-function( pool , n1, n2, p=0){
+   tan1<- pool$tan[,1:n1]
+   tan2<- pool$tan[,(n1+1):(n1+n2)]
+   kt <- dim(tan1)[1]
+   n <- n1+n2
+   k<-pool$k
+   m<-pool$m
+   if (p == 0){
+    p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+}
+    top <-  norm( apply(tan1,1,mean) - apply(tan2,1,mean) )**2
+    bot <- sum(diag(var(t(tan1))))* (n1-1) +  sum(diag(var(t(tan2)))) * (n2-1)
+    Fstat <- ((n1 + n2 - 2)/(1/n1 + 1/n2) * top)/bot
+    pval <- 1 - pf(Fstat, p, (n1 + n2 - 2) * p)
+    z<-list()
+    z$F <- Fstat
+    z$pval <- pval
+    z$df1 <- p
+    z$df2 <- (n1 + n2 - 2) * p
+    return(z)
+}
+
+Hotelling<-function( pool , n1, n2, p=0){
+   tan1<- pool$tan[,1:n1]
+   tan2<-pool$tan[,(n1+1):(n1+n2)]
+   kt <- dim(tan1)[1]
+   n <- n1+n2
+   k<-pool$k
+   m<-pool$m
+    S1 <- var(t(tan1))
+    S2 <- var(t(tan2))
+    Sw <- ((n1 - 1) * S1 + (n2 - 1) * S2)/(n1 + n2 - 2)
+   if (p == 0){
+    p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+}
+    eva <- eigen(Sw, symmetric = TRUE,EISPACK=TRUE)
+    pcar <- eva$vectors[, 1:p]
+    pcasd <- sqrt(abs(eva$values[1:p]))
+    if (pcasd[p] < 1e-06) {
+        offset <- 1e-06
+        cat("*")
+        pcasd <- sqrt(pcasd^2 + offset)
+    }
+    lam <- rep(0, times =  kt )
+    lam[1:p] <- 1/pcasd^2
+    Suinv <- eva$vectors %*% diag(lam) %*% t(eva$vectors)
+    pcax <- t(pool$tan) %*% pcar
+    one1 <- matrix(1/n1, n1, 1)
+    one2 <- matrix(1/n2, n2, 1)
+    oneone <- rbind(one1, -one2)
+    vbar <- pool$tan %*% oneone
+    scores1 <- matrix(vbar, 1, kt ) %*% pcar
+    scores <- scores1/pcasd
+    F.partition <- ((scores[1:p]^2) * (n1 * n2 * (n1 + n2 - p -
+        1)))/((n1 + n2) * (n1 + n2 - 2) * p)
+    FF <- sum(F.partition)
+    pval <- 1 - pf(FF, p, (n1 + n2 - p - 1))
+    z<-list()
+    z$F.partition <- F.partition
+    z$F <- FF
+    z$pval <- pval
+    z$df1 <- p
+    z$T.df1 <- p
+    z$df2 <- (n1 + n2 - p - 1)
+    mm <- n - 2
+    z$T.df2 <- mm
+    z$Tsq <- FF * (n1 + n2) * (n1 + n2 - 2) * p/(n1 * n2)/(n1 +
+        n2 - p - 1)
+    z$Tsq.partition <- F.partition * (n1 + n2) * (n1 + n2 - 2) *
+        p/(n1 * n2)/(n1 + n2 - p - 1)
+    return(z)
+}
+
+James<-function( pool , n1, n2, p=0, table=FALSE){
+   tan1<- pool$tan[,1:n1]
+   tan2<-pool$tan[,(n1+1):(n1+n2)]
+   kt <- dim(tan1)[1]
+   n <- n1+n2
+   k<-pool$k
+   m<-pool$m
+    S1 <- var(t(tan1))
+    S2 <- var(t(tan2))
+    Sw <- S1/n1 + S2/n2
+   if (p == 0){
+    p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+}
+    eva <- eigen(Sw, symmetric = TRUE,EISPACK=TRUE)
+    pcar <- eva$vectors[, 1:p]
+    pcasd <- sqrt(abs(eva$values[1:p]))
+    if (pcasd[p] < 1e-06) {
+        offset <- 1e-06
+        cat("*")
+        pcasd <- sqrt(pcasd^2 + offset)
+    }
+    lam <- rep(0, times =  kt )
+    lam[1:p] <- 1/pcasd^2
+    Suinv <- eva$vectors %*% diag(lam) %*% t(eva$vectors)
+    pcax <- t(pool$tan) %*% pcar
+    one1 <- matrix(1/n1, n1, 1)
+    one2 <- matrix(1/n2, n2, 1)
+    oneone <- rbind(one1, -one2)
+    vbar <- pool$tan %*% oneone
+#    scores1 <- matrix(vbar, 1, kt ) %*% pcar
+#    scores <- scores1/pcasd
+#    F.partition <- ((scores[1:p]^2) * (n1 * n2 * (n1 + n2 - p -
+#        1)))/((n1 + n2) * (n1 + n2 - 2) * p)
+#    FF <- sum(F.partition)
+#    pval <- 1 - pf(FF, p, (n1 + n2 - p - 1))
+#########
+#        ginvSw<- pcar%*%diag(1/pcasd**2)%*%t(pcar)
+        ginvSw <- Suinv
+        pval=0
+	T1<- sum(diag(( ginvSw%*%S1/n1 )))
+	T2<- sum(diag(( ginvSw%*%S2/n2 )))
+	T1sq<- sum(diag(( (ginvSw%*%S1/n1) %*% ginvSw%*%S1/n1)))
+	T2sq<- sum(diag(( (ginvSw%*%S2/n2) %*% ginvSw%*%S2/n2)))
+
+	Tsq<- (t(vbar)%*%( ginvSw) %*%vbar)[1,1]
+if (table==TRUE){
+        AA <- 1 + 1/(2*p) * (T1**2/(n1-1) + T2**2/(n2-1) )
+	BB <- 1/(p*(p+2)) * (  ( T1**2/2 + T1sq )/(n1-1) + (T2**2/2 + T2sq )/(n2-1) )
+	 kk<-rep(0,times=1000)
+	for (i in 0:999){
+	alphai<-i/1000
+	kk[i+1]<- qchisq(alphai,df=p)*(AA + BB * qchisq(alphai,df=p) )
+	}
+        pval<- 1 - max( c(1:1000)[kk<Tsq] )/1000
+}
+#######
+    z<-list()
+    z$pval <- pval
+ 
+    z$Tsq <- Tsq
+
+    return(z)
+}
+
+
+tpsgrid<-function (TT, YY, xbegin = -999, ybegin = -999, xwidth= -999, opt = 1, ext = 0.1, ngrid = 22,cex=1,pch=20,
+col=2,zslice = 0, mag=1, axes3=FALSE )
+{
+
+    k <- nrow(TT)
+    m <- dim(TT)[2]
+
+YY <- TT + (YY-TT)*mag
+
+bb<-array(TT,c(dim(TT),1))
+aa<-defplotsize2(bb)
+
+if (xwidth== -999){
+xwidth<-aa$width
+}
+if (xbegin== -999){
+xbegin<-aa$xl
+}
+if (ybegin== -999){
+ybegin<-aa$yl
+}
+
+
+if (m == 3){
+zup<- max(TT[,3])
+zlo<- min(TT[,3])
+
+zpos<-zslice
+for (ii in 1:length(zslice) ){
+zpos[ii] <- (zup + zlo)/2 + (zup - zlo)/2* zslice[ii]
+}
+}
+
+
+
+    xstart <- xbegin
+    ystart <- ybegin
+    ngrid <- trunc(ngrid/2) * 2
+    kx <- ngrid
+    ky <- ngrid - 1
+    l <- kx * ky
+    step <- xwidth/(kx - 1)
+    r <- 0
+    X <- rep(0, times = kx)
+    Y2 <- rep(0, times = ky)
+    for (p in 1:kx) {
+        ystart <- ybegin
+        xstart <- xstart + step
+        for (q in 1:ky) {
+            ystart <- ystart + step
+            r <- r + 1
+            X[r] <- xstart
+            Y2[r] <- ystart
+        }
+    }
+
+    TPS <- bendingenergy(TT)
+    gamma11 <- TPS$gamma11
+    gamma21 <- TPS$gamma21
+    gamma31 <- TPS$gamma31
+    W <- gamma11 %*% YY
+    ta <- t(gamma21 %*% YY)
+    B <- gamma31 %*% YY
+    WtY <- t(W) %*% YY
+    trace <- c(0)
+    for (i in 1:m) {
+        trace <- trace + WtY[i, i]
+    }
+    benergy <- (1/(8 * pi)) * trace
+    l <- kx * ky
+    phi <- matrix(0, l, m)
+    s <- matrix(0, k, 1)
+
+
+for (islice in 1:length(zslice)){
+if (m == 3){  
+    refc <- matrix(c(X, Y2, rep(zpos[islice],times=kx*ky) ), kx * ky, m)
+}
+if (m == 2){
+    refc <- matrix(c(X, Y2), kx * ky, m)
+}
+
+
+    for (i in 1:l) {
+        s <- matrix(0, k, 1)
+        for (im in 1:k) {
+            s[im, ] <- sigma(refc[i, ] - TT[im, ])
+        }
+        phi[i, ] <- ta + t(B) %*% refc[i, ] + t(W) %*% s
+    }
+
+if (m == 3){
+
+if (opt==2){
+    shapes3d(TT,color=2,axes3=axes3,rglopen=FALSE)
+    shapes3d(YY,color=4,rglopen=FALSE)
+for (i in 1:k){
+lines3d(rbind(TT[i,],YY[i,]),col=1)
+}
+for (j in 1:kx){
+    lines3d(refc[ ( (j-1)*ky+1) : (ky*j) ,],color=6)
+}
+for (j in 1:ky){
+    lines3d(refc[  (0:(kx-1)*ky) + j ,],color=6)
+}
+}
+
+shapes3d(TT,color=2,axes3=axes3,rglopen=FALSE)
+shapes3d(YY,color=4,rglopen=FALSE)
+for (i in 1:k){
+lines3d(rbind(TT[i,],YY[i,]),col=1)
+}
+for (j in 1:kx){
+    lines3d(phi[ ( (j-1)*ky+1) : (ky*j) ,],color=8)
+}
+for (j in 1:ky){
+    lines3d(phi[  (0:(kx-1)*ky) + j ,],color=8)
+}
+}
+}
+
+if (m == 2){
+    par(pty = "s")
+    if (opt == 2) {
+        par(mfrow=c(1,2))
+        order <- linegrid(refc, kx, ky)
+        plot(order[1:l, 1], order[1:l, 2], type = "l", xlim = c(xbegin -
+            xwidth * ext, xbegin + xwidth * (1 + ext)), ylim = c(ybegin -
+            (xwidth * ky)/kx * ext, ybegin + (xwidth * ky)/kx *
+            (1 + ext)), xlab = " ", ylab = " ")
+        lines(order[(l + 1):(2 * l), 1], order[(l + 1):(2 * l),
+            2], type = "l")
+        points(TT, cex = cex,pch=pch,col=col)
+    }
+    order <- linegrid(phi, kx, ky)
+    plot(order[1:l, 1], order[1:l, 2], type = "l", xlim = c(xbegin -
+        xwidth * ext, xbegin + xwidth * (1 + ext)), ylim = c(ybegin -
+        (xwidth * ext * ky)/kx, ybegin + (xwidth * (1 + ext) *
+        ky)/kx), xlab = " ", ylab = " ")
+    lines(order[(l + 1):(2 * l), 1], order[(l + 1):(2 * l), 2],
+        type = "l")
+    points(YY, cex = cex,pch=pch,col=col)
+}
+
+
+}
+#
+
+
+
 rotate<-function(x,thetax,thetay,thetaz){
 thetax<-thetax/180*pi
 thetay<-thetay/180*pi
@@ -22,6 +912,7 @@ thetaz<-thetaz/180*pi
 Rx<-matrix(c(1,0,0,0,cos(thetax),sin(thetax),0,-sin(thetax),cos(thetax)),3,3)
 Ry<-matrix(c(cos(thetay),0,sin(thetay),0,1,0,-sin(thetay),0,cos(thetay)),3,3)
 Rz<-matrix(c(cos(thetaz),sin(thetaz),0,-sin(thetaz),cos(thetaz),0,0,0,1),3,3)
+
 
 y<-x
 n<-dim(x)[3]
@@ -32,20 +923,124 @@ y
 }
 
 
-shapes3d<-function(x,loop=0,type="p",colour=2,joinline=c(1:1),axes3=FALSE){
+rigidbody<-function(X,transx=0, transy=0, transz=0, thetax=0,thetay=0,thetaz=0){
+if (is.matrix(X)){
+X<-array(X,c(dim(X),1))
+}
+m<-dim(X)[2]
+n<-dim(X)[3]
+Y<-X
+if (m == 2){
+xx<-as.3d(X)
+for (i in 1:n){
+for (j in 1:m){
+xx[j,,i]<-xx[j,,i]-c(transx,transy,transz)
+} }
+yy<-rotate(xx,thetax,thetay,thetaz)
+Y<-yy
+if ( (sum(abs(yy[,3,])))< 0.000000001){
+Y<-yy[,1:2,]
+}
+}
+if (m == 3){
+for (i in 1:n){
+for (j in 1:m){
+X[j,,i]<-X[j,,i]-c(transx,transy,transz)
+} }
+Y<-rotate(X,thetax,thetay,thetaz)
+}
+Y
+}
+
+
+
+
+
+as.3d<-function(X){
+k<-dim(X)[1]
+
+if (is.matrix(X)){
+X<-array( X, c(dim(X),1) )
+}
+
+
+n<-dim(X)[3]
+if (dim(X)[2] != 2){
+print("not 2 dimensional!")
+}
+Y <- array(0, c(k,3,n) )
+Y[,1:2,] <- X
+
+if (n==1){
+Y <- Y[,,1]
+}
+
+Y
+}
+
+
+abind <- function( X1 , X2 ){
+k<-dim(X1)[1]
+m<-dim(X1)[2]
+
+if (is.matrix(X1)){
+tem<- array(0, c(k,m,1) )
+tem[,,1]<-X1
+X1<-tem
+}
+
+if (is.matrix(X2)){
+tem<- array(0, c(k,m,1) )
+tem[,,1]<-X2
+X2<-tem
+}
+
+n1<-dim(X1)[3]
+n2<-dim(X2)[3]
+Y<-array(0,c(k,m,n1+n2))
+Y[,,1:n1]<-X1
+Y[,,(n1+1):(n1+n2)]<- X2
+Y
+}
+
+
+shapes3d<-function(x,loop=0,type="p",color=2,joinline=c(1:1),axes3=FALSE,rglopen=TRUE){
+
+
 
 if (is.matrix(x)){ 
 xt <- array( 0, c(dim(x),1) )
 xt[,,1]<-x
 x<-xt 
 }
+
+if (is.array(x)==FALSE){
+cat("Data not in right format : require an array \n")
+}
+
+if (is.array(x)==TRUE){
+
+if (rglopen){
+rgl.open()
+rgl.bg(color="white")
+}
+
+
+
+if (dim(x)[2]==2){
+x <- as.3d(x)
+}
+
+
+
 if (loop == 0){
 
 k<-dim(x)[1]
 sz<- centroid.size( x[,,1] )/sqrt(k) /30
-plotshapes3d(x,type=type,colour=colour,size=sz,joinline=joinline)
+plotshapes3d(x,type=type,color=color,size=sz,joinline=joinline)
 if (axes3){
-axes3d()
+axes3d( color= "black")
+title3d(xlab="x",ylab="y",zlab="z",color="black")
 }
 }
 if (loop > 0){
@@ -58,43 +1053,52 @@ plotshapestime3d(x,type=type)
 
 }
 }
+}
 
 plotshapes3d<-
-function (x,type="p",rgl=TRUE,colour=2,size=1,joinline=c(1:1))
+function (x, type = "p", rgl = TRUE, color = 2, size = 1, joinline = c(1:1))
 {
-
     k <- dim(x)[1]
     n <- dim(x)[3]
     y <- matrix(0, k * n, 3)
     for (i in 1:n) {
         y[(i - 1) * k + (1:k), ] <- x[, , i]
     }
-if (rgl==FALSE){
-    par(mfrow = c(1, 1))
-    out <- defplotsize3(x)
-    xl <- out$xl
-    xu <- out$xu
-    yl <- out$yl
-    yu <- out$yu
-    zl <- out$zl
-    zu <- out$zu
-    scatterplot3d(y, xlim = c(xl, xu), ylim = c(yl, yu), zlim = c(zl,
-        zu), xlab = "x", ylab = "y", zlab = "z", axis = TRUE, type=type, col=colour, 
-        highlight.3d = TRUE)
+    if (rgl == FALSE) {
+        par(mfrow = c(1, 1))
+        out <- defplotsize3(x)
+        xl <- out$xl
+        xu <- out$xu
+        yl <- out$yl
+        yu <- out$yu
+        zl <- out$zl
+        zu <- out$zu
+        scatterplot3d(y, xlim = c(xl, xu), ylim = c(yl, yu),
+            zlim = c(zl, zu), xlab = "x", ylab = "y", zlab = "z",
+            axis = TRUE, type = type, color = color, highlight.3d = TRUE)
+    }
+    if (rgl == TRUE) {
+if (type=="l"){
+        points3d(y, col = color, size = size)
+            for (j in 1:n) {
+                lines3d(x[, , j],col= color)
+            }
 }
-if (rgl==TRUE){
-#    rgl.clear()
-#    rgl.bg(color=c("white","black"))
-    spheres3d(y,col=colour,radius=size)
+if (type=="dots"){
+        points3d(y, col = color, size = size)
+}
+        if (type=="p"){
+        spheres3d(y, col = color, radius = size)
+}
+        if (length(joinline) > 1) {
+            for (j in 1:n) {
+                lines3d(x[joinline, , j],col= color)
+            }
+        }
 
-if (length(joinline)>1){  
-for (j in 1:n){
-      lines3d(x[joinline,,j])
-}
+    }
 }
 
-}
-}
 
 
 plotshapestime3d<-function (x,type="p")
@@ -140,20 +1144,22 @@ plotPDMnoaxis3<-function (mean, pc, sd, xl, xu, yl, yu, lineorder, i)
 #################################
 
 
-shapepca<-function (proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1,1),project=c(1,2),scores3d=FALSE,colour=2,axes3=FALSE)
+shapepca<-function (proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1,1),project=c(1,2),scores3d=FALSE,color=2,axes3=FALSE,rglopen=TRUE,zslice=0)
 {
-
 if (scores3d==TRUE){
-
+axes3<-TRUE
 sz<-max(proc$rawscores[,max(pcno)]) - min(proc$rawscores[,max(pcno)])
-    spheres3d( proc$rawscores[,pcno] , radius=sz/30, col=colour)
+spheres3d( proc$rawscores[,pcno] , radius=sz/30, col=color)
 if (axes3){
 axes3d()
 }
 }
         
+m <- dim(proc$mshape)[2]
+k<-dim(proc$mshape)[1]
+
+
 if (scores3d==FALSE){
-    m <- dim(proc$mshape)[2]
     if ((m == 2)) {
         out <- defplotsize2(proc$rotated,project=project)
         xl <- out$xl
@@ -162,7 +1168,6 @@ if (scores3d==FALSE){
         plotpca(proc, pcno, type, mag, xl, yl, width, joinline,project)
     }
     if ((m == 3)&&(type=="m")) {
-
 #        plot3Dmean(proc)
 #        cat("Mean shape \n")
 #        for (i in 1:length(pcno)) {
@@ -176,11 +1181,36 @@ plotpca3d(proc,pcno[i])
         }
 
     }
-       if ((m == 3)&&(type!="m")) {
 
-k<-dim(proc$mshape)[1]
+
+## correct length of tangent vector if in Helmertized space
+
+
+
+
+
+   h <- defh(k - 1)
+    zero <- matrix(0, k - 1, k)
+    H <- cbind(h, zero, zero)
+    H1 <- cbind(zero, h, zero)
+   H2 <- cbind( zero, zero, h)
+    H <- rbind(H, H1, H2)
+
+    if (dim(proc$pcar)[1] == (3 * (k - 1))) {
+        pcarot <- (t(H) %*% proc$pcar)
+proc$pcar<-pcarot    
+}
+
+
+       if (((m == 3)&&(type!="m"))&&(type!="g")) {
+if (rglopen){
+rgl.open()
+rgl.bg(color="white")
+}
+
+
 sz<- centroid.size( proc$mshape )/sqrt(k) /30
-        spheres3d(proc$mshape,radius=sz, col=colour)
+        spheres3d(proc$mshape,radius=sz, col=color)
 if (axes3){
 axes3d()
 }
@@ -195,6 +1225,21 @@ lines3d(rbind(proc$mshape[j,],pc[j,]),col=i)
         }
     }
 }
+
+
+if ((m == 3)&&(type=="g")){
+if (rglopen){
+rgl.open()
+rgl.bg(color="white")
+}
+
+       for (i in pcno ) {
+  pc<- proc$mshape + 3*mag*proc$pcasd[i]*cbind(proc$pcar[1:k,i],
+           proc$pcar[(k+1):(2*k),i],proc$pcar[(2*k+1):(3*k),i])
+tpsgrid( proc$mshape, pc, zslice=zslice)
+}
+}
+
 
 
 
@@ -266,6 +1311,13 @@ function (A, B)
 	TT<-eigen(Sw,symmetric=TRUE,EISPACK=TRUE)
         pcar <- TT$vectors[, 1:p]
         pcasd <- sqrt(abs(TT$values[1:p]))
+####### add small offset if defecient in rank
+if (pcasd[p] < 0.000001)
+{offset<- 0.000001
+cat("*")
+pcasd <- sqrt(pcasd**2 + offset**2)
+}
+#######################################
         pcax <- t(poolpr$tan) %*% pcar
         h <- defh(k - 1)
         zero <- matrix(0, k - 1, k)
@@ -363,7 +1415,8 @@ es<-eigen(S,symmetric=TRUE,EISPACK=TRUE)$values
 nn<-length(es)
 if (es[nn] < 0.000001)
 {offset<- 0.000001
-cat("Warning: small samples \n")
+#cat("Warning: test: small samples, lambda I added to within group covariance matrix \n")
+cat("*")
 }
 invS<-solve(S+offset*diag(nn))
 
@@ -377,15 +1430,28 @@ MGM
 
 
 
-resampletest<-function(A,B,resamples=200,permutation=FALSE){
+
+resampletest<-function(A,B,resamples=200,replace=TRUE){  
 
 A1<-A
 A2<-B
-
 B<-resamples
 
-out<-list(lambda=0,lambda.pvalue=0,lambda.table.pvalue=0,H=0,H.pvalue=0,H.table.pvalue=0,J=0,J.pvalue=0,J.table.pvalue=0,
-G=0,G.pvalue=0,G.table.pvalue=0)
+k<-dim(A1)[1]
+m<-dim(A1)[2]
+nmin<- min(dim(A1)[3],dim(A2)[3])
+ntot<- dim(A1)[3] + dim(A2)[3]
+M<- (k-1)*m - m*(m-1)/2 - 1
+if (M >= ntot) {
+cat("Warning: Low sample size (n1 + n2 <= p) \n")
+}
+if ((M >= nmin)&&(replace==TRUE)){
+cat("Warning: Low sample sizes : min(n1,n2)<=p : * indicates some regularization carried out \n")
+}
+
+permutation<- !replace
+
+
 
    if (is.complex(A1)) {
         tem <- array(0, c(nrow(A1), 2, ncol(A1)))
@@ -402,6 +1468,8 @@ G=0,G.pvalue=0,G.table.pvalue=0)
     m <- dim(A1)[2]
         if (m != 2) {
         print("Data not two dimensional")
+        print("Carrying out tests on Procrustes residuals")
+        out <- testmeanshapes( A1, A2, resamples = resamples, replace=replace)
         return(out)
     }
 
@@ -409,18 +1477,18 @@ G=0,G.pvalue=0,G.table.pvalue=0)
     zst2<-A2[,1,]+1i*A2[,2,]
 
 
+
+
 nsam1<-dim(zst1)[2]
 nsam2<-dim(zst2)[2]
 k<-dim(zst1)[1]
-Tu<-rep(0,times=B)
-Gu<-Tu
-Hu<-Tu
-Ju<-Tu
 LL<-(MGM(zst1)+MGM(zst2))*(nsam1+nsam2)
 LL1<-cbind(Re(LL),Im(LL))
 LL2<-cbind(-Im(LL),Re(LL))
 LL<-rbind(LL1,LL2)
 Tumc<-min(eigen(LL,symmetric=TRUE,only.values=TRUE,EISPACK=TRUE)$values)
+
+
 m1<-preshape(procrustes2d(zst1)$mshape)
 m1<-m1[,1]+1i*m1[,2]
 m2<-preshape(procrustes2d(zst2)$mshape)
@@ -488,8 +1556,23 @@ Htabpval<-Htem$pval
 Jtabpval<-Jtem$pval
 
 
+if (B > 0){
+
+Tu<-rep(0,times=B)
+Gu<-Tu
+Hu<-Tu
+Ju<-Tu
+
+
 cat("Resampling...")
 cat(c("No of resamples = ",B,"\n"))
+
+if (permutation){
+cat("Permutations - sampling without replacement \n")
+}
+if (permutation==FALSE){
+cat("Bootstrap - sampling with replacement \n")
+}
 
 for (i in 1:B){
 cat(c(i," "))
@@ -541,6 +1624,8 @@ pvalJ<-(1+numbig)/(B+1)
 
 
 cat(" \n")
+out<-list(lambda=0,lambda.pvalue=0,lambda.table.pvalue=0,H=0,H.pvalue=0,H.table.pvalue=0,J=0,J.pvalue=0,J.table.pvalue=0,
+G=0,G.pvalue=0,G.table.pvalue=0)
 
 out$lambda<-Tumc
 out$lambda.pvalue<-pvalb
@@ -554,6 +1639,25 @@ out$J.table.pvalue<-Jtabpval
 out$G<-Gumc
 out$G.pvalue<-pvalG
 out$G.table.pvalue<-Gtabpval
+
+}
+
+if (resamples==0){
+out<-list(lambda=0,lambda.table.pvalue=0,H=0,H.table.pvalue=0,J=0,J.table.pvalue=0,G=0,G.table.pvalue=0)
+
+out$lambda<-Tumc
+out$lambda.table.pvalue<-1-pchisq(Tumc,2*k-4)
+out$H<-Humc
+out$H.table.pvalue<-Htabpval
+out$J<-Jumc
+out$J.table.pvalue<-Jtabpval
+out$G<-Gumc
+out$G.table.pvalue<-Gtabpval
+
+
+}
+
+
 
 out
 }
@@ -639,6 +1743,11 @@ R<-fort.ROTATEANDREFLECT(A,B)
 s<-1
 if (scale==TRUE){
 s<-fos(A,B)
+
+if (reflect==TRUE){
+s<-fos.REFLECT(A,B)
+}
+
 }
 Ahat<-fcnt(A)
 Bhat<-fcnt(B)%*%R*s
@@ -677,7 +1786,17 @@ mx2<-max(x[,project[2],])
 }
 
 
-plotshapes<-function(A,B=0,joinline=c(1,1),orthproj=c(1,2)){
+plotshapes<-function(A,B=0,joinline=c(1,1),orthproj=c(1,2),color=1,symbol=1){
+
+CHECKOK<-TRUE
+if (is.array(A)==FALSE){
+if (is.matrix(A)==FALSE){
+cat("Error !! argument should be an array or matrix \n")
+CHECKOK<-FALSE
+}
+}
+
+if (CHECKOK){
 k<-dim(A)[1]
 m<-dim(A)[2]
 kk<-k
@@ -712,10 +1831,21 @@ ans<-defplotsize2(B)
 width<-max(out$width,ans$width)
 } 
 n<-dim(A)[3]
+
+lc<-length(color)
+lt<- k*m*n/lc
+color<-rep(color,times=lt)
+lc<-length(symbol)
+lt<- k*m*n/lc
+symbol<-rep(symbol,times=lt)
+
+
+
 plot(A[,,1],xlim=c(out$xl,out$xl+width),ylim=c(out$yl,
 out$yl+width),type="n",xlab=" ",ylab=" ")
 for (i in 1:n){
-points(A[,,i],pch=c(1:kk))
+select<- ((i-1)*k*m +1):(i*k*m)
+points(A[,,i],pch=symbol[select],col=color[select])
 lines(A[joinline,,i])
 }
 if (length(c(B))!=1){
@@ -730,8 +1860,9 @@ n<-dim(A)[3]
 plot(A[,,1],xlim=c(ans$xl,ans$xl+width),ylim=c(ans$yl,
 ans$yl+width),type="n",xlab=" ",ylab=" ")
 for (i in 1:n){
-points(A[,,i],pch=c(1:kk))
+points(A[,,i],pch=symbol[select],col=color[select])
 lines(A[joinline,,i])
+}
 }
 }
 }
@@ -819,7 +1950,7 @@ Goodall2D<-function(A, B)
         return(z)
 }
 
-Goodalltest<-function(A, B,tol1=1e-05,tol2=1e-05)
+Goodalltest<-function(A, B,tol1=1e-07,tol2=tol1)
 {
 #Calculates Goodall's two sample F test
 #in: data arrays A, B: 
@@ -870,6 +2001,13 @@ Hotelling2D<-function (A, B)
         p <- 2 * k - 4
         pcar <- eigen(Sw,EISPACK=TRUE)$vectors[, 1:p]
         pcasd <- sqrt(abs(eigen(Sw)$values[1:p]))
+####### add small offset if defecient in rank
+if (pcasd[p] < 0.000001)
+{offset<- 0.000001
+cat("*")
+pcasd <- sqrt(pcasd**2 + offset**2)
+}
+#######################################
         pcax <- t(poolpr$tan) %*% pcar
         h <- defh(k - 1)
         zero <- matrix(0, k - 1, k)
@@ -904,7 +2042,7 @@ Hotelling2D<-function (A, B)
 
 
 
-Hotellingtest<-function (A, B, tol1 = 1e-05, tol2 = 1e-05) 
+Hotellingtest<-function (A, B, tol1 = 1e-07, tol2 = 1e-07) 
 {
     z <- list(Tsq.partition = 0, Tsq = 0, F.partition = 0, F = 0, 
         pval = 0, df1 = 0, df2 = 0, T.df1 = 0, T.df2 = 0)
@@ -923,7 +2061,17 @@ Hotellingtest<-function (A, B, tol1 = 1e-05, tol2 = 1e-05)
     p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
     eva<-eigen(Sw,symmetric=TRUE)
     pcar <- eva$vectors[, 1:p]
-    pcasd <- sqrt(eva$values[1:p])
+    pcasd <- sqrt(abs(eva$values[1:p]))
+
+####### add small offset if defecient in rank
+if (pcasd[p] < 0.000001)
+{
+offset<- 0.000001
+cat("*")
+pcasd <- sqrt(pcasd**2 + offset)
+}
+#######################################
+
     lam<-rep(0,times=(k*m-m))
     lam[1:p]<-1/pcasd**2
     Suinv<-eva$vectors%*%diag(lam)%*%t(eva$vectors)
@@ -961,7 +2109,7 @@ Hotellingtest<-function (A, B, tol1 = 1e-05, tol2 = 1e-05)
 
 
 
-# Hotellingtest<-function(A, B, tol1=1e-05,tol2=1e-05)
+# Hotellingtest<-function(A, B, tol1=1e05,tol2=1e05)
 # OLD VERSION using $tan rather than $tanpartial
 #{
 #Calculates two sample Hotelling Tsq test for testing whether 
@@ -1030,7 +2178,7 @@ I2mat<-function(Be)
 	tem
 }
 
-tpsgrid<-function (TT, YY, xbegin = -999, ybegin = -999, xwidth= -999, opt = 2, ext = 0.1,
+tpsgrid.old<-function (TT, YY, xbegin = -999, ybegin = -999, xwidth= -999, opt = 2, ext = 0.1,
     ngrid = 22,cex=1,pch=20,col=2)
 {
     k <- nrow(TT)
@@ -1140,73 +2288,272 @@ Vmat<-function(z)
 	x <- rbind(Re(z), Im(z))
 	x
 }
-bendingenergy<-function(TT)
+
+bendingenergy<-function (TT)
 {
-# input configuration
-# output z$gamma11: bending energy matrix
-#        z$prinwarps: principal warps (evecs of gamma11
-#        z$prinwarpeval: eigenvalues of gamma11 (=bending energies)
-	z <- list(gamma11 = 0, gamma21 = 0, gamma31 = 0, prinwarps = 0, 
-		prinwarpeval = 0, Un = 0)
-	k <- nrow(TT)
-	S <- matrix(0, k, k)
-	for(i in 1:k) {
-		for(j in 1:k) {
-			S[i, j] <- sigma(TT[i,  ] - TT[j,  ])
-		}
-	}
-	one <- matrix(1, k, 1)
-	zero <- matrix(0, 3, 3)
-	P <- cbind(S, one, TT)
-	P <- rbind(S, t(one))
-	Q <- rbind(P, t(TT))
-	O <- cbind(one, TT)
-	U <- rbind(O, zero)
-	star <- cbind(Q, U)
-	star <- matrix(star, k + 3, k + 3)
-	A <- eigen(star)
-	deltainv <- diag(1/A$values)
-	gamma <- A$vectors
-	starinv <- gamma %*% deltainv %*% t(gamma)
-	gamma11 <- matrix(0, k, k)
-	for(i in 1:k) {
-		for(j in 1:k) {
-			gamma11[i, j] <- starinv[i, j]
-		}
-	}
-	gamma21 <- matrix(0, 1, k)
-	for(i in 1:1) {
-		for(j in 1:k) {
-			gamma21[i, j] <- starinv[k + 1, j]
-		}
-	}
-	gamma31 <- matrix(0, 2, k)
-	for(i in 1:2) {
-		for(j in 1:k) {
-			gamma31[i, j] <- starinv[i + k + 1, j]
-		}
-	}
-	prinwarp <- eigen(gamma11, symm = TRUE)
-	prinwarps <- prinwarp$vectors
-	prinwarpeval <- prinwarp$values
-	meanxy <- c(TT[, 1], TT[, 2])
-	alpha <- sum(meanxy[1:k]^2)
-	beta <- sum(meanxy[(k + 1):(2 * k)]^2)
-	u1 <- c(alpha * meanxy[(k + 1):(2 * k)], beta * meanxy[1:k])
-	u2 <- c( - beta * meanxy[1:k], alpha * meanxy[(k + 1):(2 * k)])
-	u1 <- u1/sqrt(alpha * beta)/sqrt(alpha + beta)
-	u2 <- u2/sqrt(alpha * beta)/sqrt(alpha + beta)
-	Un <- matrix(0, 2 * k, 2)
-	Un[, 1] <- u1
-	Un[, 2] <- u2
-	z$gamma11 <- gamma11
-	z$gamma21 <- gamma21
-	z$gamma31 <- gamma31
-	z$prinwarps <- prinwarps
-	z$prinwarpeval <- prinwarpeval
-	z$Un <- Un
-	return(z)
+    z <- list(gamma11 = 0, gamma21 = 0, gamma31 = 0, prinwarps = 0,
+        prinwarpeval = 0, Un = 0)
+
+
+    k <- nrow(TT)
+    m <- dim(TT)[2]
+    S <- matrix(0, k, k)
+    for (i in 1:k) {
+        for (j in 1:k) {
+            S[i, j] <- sigma(TT[i, ] - TT[j, ])
+        }
+    }
+
+    one <- matrix(1, k, 1)
+    zero <- matrix(0, m+1, m+1)
+#    P <- cbind(S, one, TT)
+    P <- rbind(S, t(one))
+    Q <- rbind(P, t(TT))
+    O <- cbind(one, TT)
+    U <- rbind(O, zero)
+    star <- cbind(Q, U)
+    star <- matrix(star, k + m+1, k + m+1)
+    A <- eigen(star,symmetric=TRUE)
+    deltainv <- diag(1/A$values)
+    gamma <- A$vectors
+    starinv <- gamma %*% deltainv %*% t(gamma)
+    gamma11 <- matrix(0, k, k)
+    for (i in 1:k) {
+        for (j in 1:k) {
+            gamma11[i, j] <- starinv[i, j]
+        }
+    }
+    gamma21 <- matrix(0, 1, k)
+    for (i in 1:1) {
+        for (j in 1:k) {
+            gamma21[i, j] <- starinv[k + 1, j]
+        }
+    }
+    gamma31 <- matrix(0, m, k)
+    for (i in 1: (m) ) {
+        for (j in 1:k) {
+            gamma31[i, j] <- starinv[i + k + 1, j]
+        }
+    }
+    prinwarp <- eigen(gamma11, symmetric = TRUE)
+    prinwarps <- prinwarp$vectors
+    prinwarpeval <- prinwarp$values
+
+####need to rotate to compute affine components
+Rot <- prcomp(TT)$rotation
+TT<- TT  %*% Rot
+    if (m == 2){
+    meanxy <- c(TT[, 1], TT[, 2])
+    alpha <- sum(meanxy[1:k]^2)
+    beta <- sum(meanxy[(k + 1):(2 * k)]^2)
+    u1 <- c(alpha * meanxy[(k + 1):(2 * k)], beta * meanxy[1:k])
+    u2 <- c(-beta * meanxy[1:k], alpha * meanxy[(k + 1):(2 *
+        k)])
+    u1 <- u1/sqrt(alpha * beta)/sqrt(alpha + beta)
+    u2 <- u2/sqrt(alpha * beta)/sqrt(alpha + beta)
+
+
+    Un <- matrix(0, 2 * k, 2)
+    Un[, 1] <- u1
+    Un[, 2] <- u2
+    Vn<-Un
+    Vn[,1] <-  cbind(Un[1:k,1],Un[(k+1):(2*k),1]) %*%t(Rot)
+    Vn[,2] <-  cbind(Un[1:k,2],Un[(k+1):(2*k),2]) %*%t(Rot)
+    Un <- Vn
+ }
+
+    if (m == 3){
+    meanxy <- c(TT[, 1], TT[, 2], TT[,3])
+    alpha <- sum(meanxy[1:k]^2)
+    beta <- sum(meanxy[(k + 1):(2 * k)]^2)
+    gamma <- sum(meanxy[(2*k + 1):(3 * k)]^2)
+
+mu<- meanxy[1:k]
+nu <- meanxy[(k+1):(2*k)]
+omega<- meanxy[(2*k+1):(3*k)]
+ze <- rep(0,times=k)
+    u1 <- c( ze , alpha*beta* omega , alpha*gamma* nu) /
+                   sqrt(alpha^2*beta^2*gamma + alpha^2*gamma^2*beta)
+    u2 <- c( alpha*beta* omega , ze,  beta*gamma* mu ) /
+                   sqrt(beta^2*alpha^2*gamma + beta^2*gamma^2*alpha)
+    u3 <- c( alpha*gamma*nu , beta*gamma*mu, ze  )/
+                   sqrt(alpha^2*gamma^2*beta  + beta^2*gamma^2*alpha)
+
+    u4 <- c( ze , ze , omega) /
+                   sqrt( gamma)
+
+    u5 <- c( -beta*gamma*mu , alpha*gamma*nu, ze  )/
+                   sqrt(alpha*gamma^2*beta^2  + beta*gamma^2*alpha^2)
+    
+    tem <- c( -gamma*beta* mu , ze,  beta*alpha* omega ) /
+                   sqrt(beta^2*alpha*gamma^2 + beta^2*gamma*alpha^2) 
+    tem2 <- tem - u5*sum(u5*tem)
+    u4 <- tem2/norm(tem2) 
+
+     
+
+    Un <- matrix(0, 3 * k, 5)
+    Un[, 1] <- u1
+    Un[, 2] <- u2
+    Un[,3] <- u3
+    Un[,4] <- u4
+    Un[,5] <- u5
+    Vn<-Un
+    Vn[,1] <-  cbind(Un[1:k,1],Un[(k+1):(2*k),1],Un[(2*k+1):(3*k),1]) %*%t(Rot)
+    Vn[,2] <-  cbind(Un[1:k,2],Un[(k+1):(2*k),2],Un[(2*k+1):(3*k),2]) %*%t(Rot)
+    Vn[,3] <-  cbind(Un[1:k,3],Un[(k+1):(2*k),3],Un[(2*k+1):(3*k),3]) %*%t(Rot)
+    Vn[,4] <-  cbind(Un[1:k,4],Un[(k+1):(2*k),4],Un[(2*k+1):(3*k),4]) %*%t(Rot)
+    Vn[,5] <-  cbind(Un[1:k,5],Un[(k+1):(2*k),5],Un[(2*k+1):(3*k),5]) %*%t(Rot)
+    Un <- Vn
+ }
+
+
+    z$gamma11 <- gamma11
+    z$gamma21 <- gamma21
+    z$gamma31 <- gamma31
+    z$prinwarps <- prinwarps
+    z$prinwarpeval <- prinwarpeval
+    z$Un <- Un 
+    return(z)
 }
+
+shaperw <- function( proc ,alpha=1,affine=FALSE){
+
+
+rw<-proc
+
+if ((alpha != 0)||(affine == TRUE)) {
+
+k<-dim(proc$mshape)[1]
+m<-dim(proc$mshape)[2]
+n<-dim(proc$mshape)[3]
+nconstr <- m + m*(m-1)/2 + 1
+M <- k*m - nconstr
+
+if (m == 2){
+bb<- bendingenergy( proc$mshape )
+Gamma11<- bb$gamma11
+Be <- rbind( cbind( Gamma11, Gamma11*0 ) , cbind(Gamma11*0, Gamma11) )
+Un <- bb$Un
+Bedim<- 2
+}
+if (m == 3){
+bb<- bendingenergy( proc$mshape )
+Gamma11<- bb$gamma11
+Ze<-Gamma11*0
+Be <- rbind( cbind( Gamma11, Ze,Ze) , cbind(Ze, Gamma11,Ze) , cbind(Ze,Ze,Gamma11)  )
+Un <- bb$Un
+Bedim <- 5
+}
+
+ev <- eigen(Be,symmetric=TRUE)
+
+Beminusalpha <- ev$vectors %*% diag( c(ev$values[ 1:(M-Bedim)]**(-alpha/2), rep(0, times = nconstr + Bedim)) )%*%t( ev$vectors)
+Bealpha <- ev$vectors %*% diag( c(ev$values[ 1:(M-Bedim) ]**(alpha/2),  rep(0, times = nconstr + Bedim)  ))%*%
+             t( ev$vectors)
+
+evbe<-ev
+
+SS <- Beminusalpha %*% var(t(proc$tan)) %*% Beminusalpha
+
+ev <- eigen(SS)
+
+
+relw.vec<- ev$vectors
+relw.sd <- sqrt(abs(ev$values))
+
+
+# ratio of eigenvalues of warps (quoted in book)
+rw$percent<- relw.sd**2/sum(relw.sd**2)*100
+
+
+
+
+sgnchange <- sample(c(-1,1),size= m*k ,replace=TRUE)
+
+rw$pcar<- Bealpha %*% relw.vec%*%diag(sgnchange)
+rw$pcasd<- relw.sd
+
+rw$rawscores <-  t(  t( relw.vec ) %*% Beminusalpha %*%proc$tan  )
+
+sd<-sqrt(abs(diag(var((rw$rawscores)))))
+
+rw$scores <- (rw$rawscores) %*% diag(1/sd) 
+rw$stdscores<-rw$scores
+
+rw$scores<- rw$rawscores 
+
+
+
+## partial warp scores
+
+
+
+n<- proc$n
+evbend<-eigen(Gamma11,symmetric=TRUE)
+
+partialwarpscores<- array( 0 , c( n , m , k) ) 
+
+for (i in 1:m){
+partialwarpscores[,i,] <- t( t(evbend$vectors)%*%proc$rotated[,i,] )
+}
+
+rw$principalwarps<- evbe$vectors[,(k-m-1):1]
+rw$principalwarps.eigenvalues <- evbe$values[(k-m-1):1]
+rw$partialwarpscores <- partialwarpscores[,,(k-m-1):1] 
+
+sumvar <- rep(0, times= (k-m-1) )
+
+for (i in 1:(k-m-1)){
+sumvar[i] <- sum(diag( var( partialwarpscores[,,k-m-i] ) ))
+}
+
+rw$partialwarps.percent<- sumvar/sum(proc$pcasd**2)*100
+
+}
+
+if (affine==TRUE){
+dimun<- dim(Un)[2]
+rw$pcar<- Un%*%diag(sgnchange[1:(dimun)])
+pcno<-c(1: dimun)
+rw$rawscores <- t(Un)%*%proc$tan
+
+
+sd<-sqrt(abs(diag(var(t(rw$rawscores)))))
+rw$pcasd <- sd
+
+rw$percent <- sd**2 / sum( proc$pcasd**2 )*100
+
+rw$scores <- t(rw$rawscores) %*% diag(1/sd) 
+rw$rawscores<- t(rw$rawscores)
+#######
+
+tem<-prcomp1( (rw$rawscores) )
+
+npc<-0
+rw$stdscores<-tem$x
+    for (i in 1:length(tem$sdev)) {
+        if (tem$sdev[i] > 1e-07) {
+            npc <- npc + 1
+        }
+    }
+    for (i in 1:npc) {
+        rw$stdscores[, i] <- tem$x[, i]/tem$sdev[i]
+    }
+rw$pcasd <- tem$sdev
+rw$percent <- tem$sdev**2 / sum( proc$pcasd**2 )*100
+rw$pcar <- Un %*% tem$rotation
+rw$rawscores <- tem$x
+rw$scores <- rw$rawscores
+
+
+}
+
+rw
+
+}
+
+
 bookstein2d<-function(A,l1=1,l2=2){
 #input:  A: k x 2 x n array of 2D data, or  k x n complex matrix 
 #l1,l2: baseline choice for sending to (-0.5,0),(0.5,0)
@@ -1216,16 +2563,21 @@ z <- list(k = 0, n = 0, mshape=0,bshpv=0)
 if (is.complex(sum(A))==TRUE){
 n<-dim(A)[2]
 k<-dim(A)[1]
-B<-array(0,k,2,n)
+B<-array(0,c(k,2,n))
 B[,1,]<-Re(A)
 B[,2,]<-Im(A)
 A<-B
+}
+
+if (is.matrix(A)==TRUE){
+bb<-array(A,c(dim(A),1))
+A<-bb
 }
 k<-dim(A)[1]
 m<-2
 n<-dim(A)[3]
 reorder<-c(l1,l2,c(1:k)[-c(l1,l2)])
-A<-A[reorder,,1:n]
+A[,,]<-A[reorder,,1:n]
 bshpv<-array(0,c(k,m,n))
 for (i in 1:n)
 {
@@ -1237,9 +2589,8 @@ for (i in 1:n)
 bookmean<-bookmean+bshpv[,,i]
 }
 bookmean<-bookmean/n
-neworder<-reorder[reorder]
-bookmean<-bookmean[neworder,]
-bshpv<-bshpv[neworder,,]
+bookmean[reorder,] <- bookmean
+bshpv[reorder, , ] <- bshpv
 glim <- max( - min(bshpv), max(bshpv))
 par(pty="s")
 par(mfrow=c(1,1))
@@ -1986,8 +3337,9 @@ plotprinwarp<-function(TT, xbegin, ybegin, xwidth, nr, nc)
 			}
 		}
 		zpersp <- persp(xgrid, ygrid, zgrid, axes = TRUE)
-		points(perspp(TT[, 1], TT[, 2], phiTT[, k - 2 - nw], zpersp), 
-			cex = 2)
+#  NB the following is an S-Plus function : use trans3d() in R
+#		points(perspp(TT[, 1], TT[, 2], phiTT[, k - 2 - nw], zpersp), 
+#			cex = 2)
 	}
 }
 plotproc<-function(proc, xl, yl, width, joinline=c(1,1))
@@ -2350,7 +3702,7 @@ procrustes2d<-function(x, l1=1, l2=2, approxtangent=FALSE)
 	return(z)
 }
 
-testmeanshapes<-function(A,B,Hotelling=TRUE,tol1=1e-05,tol2=1e-05){
+testmeanshapes.old<-function(A,B,Hotelling=TRUE,tol1=1e05,tol2=1e05){
 	if(is.complex(A)) {
 		tem <- array(0, c(nrow(A), 2, ncol(A)))
 		tem[, 1,  ] <- Re(A)
@@ -2379,7 +3731,6 @@ cat("Goodall's F test: ",c("Test statistic = ",round(test$F,2)),
 c("\n p-value = ",round(test$pval,4)),c("Degrees of freedom = ",
 test$df1,test$df2),"\n")
 }
-
 test
 }
 
@@ -2388,11 +3739,16 @@ test
 
 
 
-procGPA<-function(x,scale=TRUE,reflect=FALSE,eigen2d=TRUE,
-tol1=1e-05,tol2=tol1,approxtangent=TRUE,proc.output=FALSE,distances=TRUE,pcaoutput=TRUE)
+procGPA<-function(x,scale=TRUE,reflect=FALSE,eigen2d=FALSE,
+tol1=1e-05,tol2=tol1,tangentresiduals=TRUE,proc.output=FALSE,distances=TRUE,pcaoutput=TRUE,
+alpha = 0, affine = FALSE)
 {
 #
 #
+# `tangentresiduals' indicates if Procrustes residuals should be used for analysis
+#   for the shape (scale=TRUE) case these are approximate tangent space coordinates
+#   for the size-and-shape (scale=FALSE) case these are exact tangent space coordinates
+approxtangent<-tangentresiduals
 	if(is.complex(x)) {
 		tem <- array(0, c(nrow(x), 2, ncol(x)))
 		tem[, 1,  ] <- Re(x)
@@ -2400,6 +3756,7 @@ tol1=1e-05,tol2=tol1,approxtangent=TRUE,proc.output=FALSE,distances=TRUE,pcaoutp
 		x <- tem
 	}
 	m <- dim(x)[2]
+n<-dim(x)[3]
 if (reflect==FALSE){
 if ((m == 2)&&(scale==TRUE)){
 if (eigen2d==TRUE){
@@ -2430,7 +3787,23 @@ out<-procrustesGPA.rot(x,tol1,tol2,approxtangent=approxtangent,
 proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
 }
 }
-out
+out$stdscores<-out$scores
+out$scores<-out$rawscores
+
+if (approxtangent==FALSE){
+out$mshape <- out$mshape/centroid.size( out$mshape)
+for (i in 1:n){
+out$rotated[,,i]<- out$rotated[,,i]/centroid.size(out$rotated[,,i])
+}
+}
+
+
+rw<-out
+rw <- shaperw(out, alpha=alpha , affine=affine )
+
+
+
+rw
 }
 
 
@@ -2782,7 +4155,11 @@ riemdist.mD<-function(x, y)
 	z <- preshape.mD(x)
 	w <- preshape.mD(y)
 	Q <- t(z) %*% w %*% t(w) %*% z
-	check <- sum(diag(t(z) %*% w))
+		ev <- eigen(t(z) %*% w)$values
+		check <- 1
+		for(i in 1:m) {
+			check <- check * ev[i]
+		}
 	ev <- sqrt(eigen(Q, symm = TRUE)$values)
 	if(check < 0)
 		ev[m] <-  - ev[m]
@@ -2811,14 +4188,36 @@ rotateaxes<-function(mshapein, rotatedin)
 	z$R <- R
 	return(z)
 }
-sigma<-function(x)
+
+#sigma<-function(x)
+#{
+#	length <- sqrt(x[1]^2 + x[2]^2)
+#	if(length == 0)
+#		sig <- 0
+#	else sig <- length^2 * log(length^2)
+#	sig
+#}
+
+sigma<-function( x )
 {
-	length <- sqrt(x[1]^2 + x[2]^2)
-	if(length == 0)
+#  other radial basis functions/covariance functions are possible of course
+
+	hh <- norm(x)
+	if( hh == 0)
 		sig <- 0
-	else sig <- length^2 * log(length^2)
-	sig
+	else
+{
+if ( length(x) == 2  ){
+sig <- hh^2 * log( hh^2)   # null space includes affine terms (2D data)
 }
+if ( length(x)==3 ){
+	sig <-  -hh   # null space includes affine terms (3D data)
+}
+}
+sig
+}
+
+
 st<-function(zstar)
 {
 #input complex matrix
@@ -2841,7 +4240,9 @@ tanfigurefull<-function(vv, gamma)
 #inverse projection from complex tangent plane coordinates vv, using pole gamma
 #using Procrustes to with scaling to the pole gamma 
 #output centred icon 
+	k <- nrow(gamma) + 1
 	f1 <- tanfigure(vv, gamma)
+	h <- defh(k - 1)
 	f2 <- t(h) %*% gamma
 	beta <- Mod(st(f1) %*% f2)
 	f1 <- f1 * c(beta)
@@ -4311,7 +5712,7 @@ n<-kk
 Lmat<-t(omat)%*%omat/n
 
 
-eig<-eigen(Lmat,symmetric=T)
+eig<-eigen(Lmat,symmetric=TRUE)
 U<-eig$vectors
 lambda<-eig$values
 
@@ -4556,9 +5957,11 @@ ii<-zz$r.no.
 
  fopa<-function(a, b)
 {
-	q1 <- sum(diag(fcnt(a) %*% t(fcnt(a))))
-	q2 <- fos(a, b)^2 * sum(diag(fcnt(b) %*% t(fcnt(b))))
-	q3 <- 2 * fos(a, b) * sum(diag(fort(a, b) %*% t(fcnt(a)) %*% fcnt(b)))
+abar<-fcnt(a)
+bbar<-fcnt(b)
+	q1 <- sum(diag( abar %*% t( abar )))
+	q2 <- fos(a, b)^2 * sum(diag( bbar %*% t( bbar )))
+	q3 <- 2 * fos(a, b) * sum(diag(fort(a, b) %*% t( abar ) %*% bbar ))
 	gs <- q1 + q2 - q3
 	gs
 }
@@ -4567,19 +5970,29 @@ ii<-zz$r.no.
 fort.ROTATEANDREFLECT<-function(a, b)
 {
 	x <- t(fcnt(a)) %*% fcnt(b)
-	t <- svd(x)$v %*% t(svd(x)$u)
+        xsvd<-svd(x)
+	t <- xsvd$v %*% t(xsvd$u)
 	return(t)
 }
 
-fos<-function(a, b)
+fos.REFLECT<-function(a, b)
 {
-	z <- ftrsq(fcnt(a), fcnt(b))/sum(diag(t(fcnt(b)) %*% fcnt(b)))
+abar<-fcnt(a)
+bbar<-fcnt(b)
+	z <- ftrsq(abar, bbar )/sum(diag(t( bbar ) %*% bbar ))
 	z
 }
 
- ftrsq<-function(a, b)
+
+fos <- function (a, b)
 {
-	z <- sum(sqrt(eigen(t(b) %*% a %*% t(a) %*% b)$values))
+    z <- cos(riemdist(a,b))*centroid.size(a)/centroid.size(b)
+    z
+}
+
+
+ftrsq<-function(a, b)
+{z <- sum(sqrt(abs(eigen(t(b) %*% a %*% t(a) %*% b)$values)))
 	z
 }
 
@@ -4733,11 +6146,13 @@ vec1<-function(a3)
 	zz<-matrix(a3,dim(a3)[1]*dim(a3)[2], dim(a3)[3])
 	return(zz)
 }
+
 fort.ROTATION<-function(a, b)
 {
 	x <- t(fcnt(a)) %*% fcnt(b)
-        v<-svd(x)$v
-        u<-svd(x)$u
+        xsvd<- svd(x)
+        v<- xsvd$v
+        u<- xsvd$u
 	tt <- v %*% t(u)
         chk1<-Re(prod(eigen(v)$values))
         chk2<-Re(prod(eigen(u)$values))
@@ -4753,6 +6168,7 @@ fort.ROTATION<-function(a, b)
 }
  	return(tt)
 }
+
 ############end of Mohammad Faghihi's (adapted) routines
 
 
@@ -4815,11 +6231,13 @@ mn[3:k,1]<-ans$estimate[1:(k-2)]
 mn[3:k,2]<-ans$estimate[(k-1):(2*k-4)]
 out$mshape<-mn
 out$code<-ans$code
+out$loglike <- -ans$minimum
 out$gradient<-ans$gradient
 out$tau<-sqrt(1/ans$estimate[2*k-3]**2)
 out$kappa<-centroid.size(mn)**2/(4*out$tau**2)
 out$varcov<-solve(ans$hessian)
 out$se<-c(sqrt(diag(out$varcov)))
+out$se[2*k-3] <- out$se[2*k-3] *out$tau**2
 out
 }
 }
@@ -5289,3 +6707,86 @@ schizophrenia.dat<-c( 0.345632   , -0.0360314
    , 0.0681437   , -0.0866473)
 schizophrenia.dat<-array(schizophrenia.dat,c(2,13,28))
 schizophrenia.dat<-aperm(schizophrenia.dat,c(2,1,3))
+
+
+permutationtest<-function(A,B,nperms=100){
+
+A1<-A
+A2<-B
+B <- nperms
+nsam1<-dim(A1)[3]
+nsam2<-dim(A2)[3]
+
+
+
+Gtem<-Goodalltest(A1,A2)
+Htem<-Hotellingtest(A1,A2)
+
+
+Gumc<-Gtem$F
+Humc<-Htem$F
+
+Gtabpval<-Gtem$pval
+Htabpval<-Htem$pval
+
+
+if (B > 0){
+
+Apool <- array( 0, c(dim(A1)[1],dim(A1)[2],dim(A1)[3]+dim(A2)[3] ) )
+Apool[,,1:nsam1]<-A1
+Apool[,,(nsam1+1):(nsam1+nsam2)] <- A2
+
+out<-list(H=0,H.pvalue=0,H.table.pvalue=0,G=0,G.pvalue=0,G.table.pvalue=0)
+
+Gu<-rep(0,times=B)
+Hu<-rep(0,times=B)
+
+
+
+cat("Permutations - sampling without replacement: ")
+cat(c("No of permutations = ",B,"\n"))
+
+for (i in 1:B){
+cat(c(i," "))
+
+
+select<-sample( 1: (nsam1+nsam2) )
+
+
+Gu[i]<-Goodalltest( Apool[,,select[1:nsam1] ] , Apool[,,select[ (nsam1+1):(nsam2+nsam1) ] ])$F
+Hu[i]<-Hotellingtest(Apool[,,select[1:nsam1] ],Apool[,,select[ (nsam1+1):(nsam1+nsam2) ] ] )$F
+
+}
+
+Gu<-sort(Gu)
+numbig<-length(Gu[Gumc<Gu])
+pvalG<-(1+numbig)/(B+1)
+Hu<-sort(Hu)
+numbig<-length(Hu[Humc<Hu])
+pvalH<-(1+numbig)/(B+1)
+cat(" \n")
+
+out$H<-Humc
+out$H.pvalue<-pvalH
+out$H.table.pvalue<-Htabpval
+
+out$G<-Gumc
+out$G.pvalue<-pvalG
+out$G.table.pvalue<-Gtabpval
+
+}
+
+if (B == 0){
+
+out<-list(H=0,H.table.pvalue=0,G=0,G.table.pvalue=0)
+
+out$H<-Humc
+out$H.table.pvalue<-Htabpval
+
+out$G<-Gumc
+out$G.table.pvalue<-Gtabpval
+}
+out
+}
+
+permutationtest <- permutationtest2

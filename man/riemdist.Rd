@@ -2,7 +2,7 @@
 \alias{riemdist}
 %- Also NEED an `\alias' for EACH other topic documented here.
 \title{Riemannian shape distance} 
-\description{Calculates the Riemannian shape distance $\rho$ between two
+\description{Calculates the Riemannian shape distance rho between two
  configurations}   
 \usage{
 riemdist(x, y)
@@ -16,7 +16,6 @@ where k = number of landmarks and m = no of dimensions}
 \value{
   The Riemannian shape distance rho between the two configurations. 
 Note 0 <= rho <= pi/2 } 
-}
 \references{
    Kendall, D. G. (1984). 
    Shape manifolds,  Procrustean metrics and complex

@@ -21,13 +21,11 @@ were diagnosed with schizophrenia.
 }
 \usage{data(schizophrenia.dat)}
 \format{
-An array of dimension 13 x 2 x 14
+An array of dimension 13 x 2 x 28
 }
 \source{
 Bookstein, F. L. (1996). Biometrics, biomathematics and the morphometric synthesis,
 Bulletin of Mathematical Biology, 58, 313--365.
-}
-
 }
 \references{
 Data kindly provided by Fred Bookstein (University of Washington and University of Vienna)

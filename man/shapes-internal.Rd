@@ -1,5 +1,19 @@
 \name{shapes-internal}
+\alias{iglogl}
+\alias{Lambdamin}
+\alias{nsa}
+\alias{protein}
+\alias{James}
+\alias{procWGPA1}
 \alias{rotate}
+\alias{bootstraptest}
+\alias{testmeanshapes.old}
+\alias{permutationtest2}
+\alias{Goodall}
+\alias{Hotelling}
+\alias{abind}
+\alias{tpsgrid.old}
+\alias{shaperw}
 \alias{BoxM} 
 \alias{Goodall2D}
 \alias{Goodalltest} 
@@ -13,6 +27,7 @@
 \alias{Vinv} 
 \alias{Vmat} 
 \alias{add} 
+\alias{as.3d}
 \alias{banner1} 
 \alias{banner4} 
 \alias{bendingenergy} 
@@ -47,6 +62,7 @@
 \alias{fort.ROTATION} 
 \alias{fort} 
 \alias{fos} 
+\alias{fos.REFLECT}
 \alias{ftrsq} 
 \alias{full.procdist} 
 \alias{genpower} 
@@ -74,6 +90,7 @@
 \alias{partial.procdist}
 \alias{partialwarpgrids}
 \alias{partialwarps}
+\alias{permutationtest}
 \alias{plot2rwscores}
 \alias{plot3Ddata}
 \alias{plot3Ddata.static}
