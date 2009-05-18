@@ -6,7 +6,7 @@
 #                 University of South Carolina
 #                         2000-2009
 #
-#          Version 1.1-2  16 April 2009 
+#          Version 1.1-3  May 18, 2009 
 #
 #----------------------------------------------------------------------
 #
@@ -311,9 +311,7 @@ tem<-tem/(n*m)
 return(z)
 }
 
-
-
-testmeanshapes <- function( A, B, resamples = 1000, replace=FALSE, scale=TRUE){
+testshapes <- function( A, B, resamples = 1000, replace=TRUE, scale=TRUE){
 if (replace==TRUE){
 out<-bootstraptest(A,B,resamples=resamples, scale=scale)
 }
@@ -321,6 +319,53 @@ if (replace==FALSE){
 out<-permutationtest(A,B,nperms=resamples, scale=scale)
 }
 out
+}
+
+
+testmeanshapes <- function( A, B, resamples = 1000, replace=TRUE, scale=TRUE){
+if (replace==TRUE){
+out<-bootstraptest(A,B,resamples=resamples, scale=scale)
+}
+if (replace==FALSE){
+out<-permutationtest(A,B,nperms=resamples, scale=scale)
+}
+
+
+if (resamples > 0){
+
+aa <- list(H = 0, H.pvalue=0, H.table.pvalue = 0, 
+           G = 0, G.pvalue = 0, G.table.pvalue = 0,
+            J = 0, J.pvalue = 0, J.table.pvalue = 0)
+
+aa$H <- out$H 
+aa$H.pvalue <- out$H.pvalue 
+aa$H.table.pvalue <- out$H.table.pvalue 
+aa$G <- out$G 
+aa$G.pvalue <- out$G.pvalue 
+aa$G.table.pvalue <- out$G.table.pvalue 
+aa$J <- out$J 
+aa$J.pvalue <- out$J.pvalue 
+aa$J.table.pvalue <- out$J.table.pvalue 
+
+ }
+
+if (resamples == 0) {
+ 
+aa <- list(H = 0, H.table.pvalue = 0, 
+           G = 0, G.table.pvalue = 0,
+            J = 0, J.table.pvalue = 0)
+
+
+aa$H <- out$H 
+aa$H.table.pvalue <- out$H.table.pvalue 
+aa$G <- out$G 
+aa$G.table.pvalue <- out$G.table.pvalue 
+aa$J <- out$J 
+aa$J.table.pvalue <- out$J.table.pvalue 
+
+}
+
+aa
 }
 
 
@@ -333,7 +378,14 @@ mdim <- dim(A1)[2]
     B <- nperms
     nsam1 <- dim(A1)[3]
     nsam2 <- dim(A2)[3]
-    pool<-procGPA( abind (A1, A2) , scale=scale)
+    pool<-procGPA( abind (A1, A2) , scale=scale, tangentresiduals = FALSE)
+
+    tempool <- pool
+for (i in 1:(nsam1+nsam2)){
+tempool$tan[,i] <- pool$tan[,i]/norm(pool$tan[,i])*pool$rho[i]
+}
+pool<-tempool
+
     permpool<-pool
     Gtem <- Goodall( pool, nsam1, nsam2)
     Htem <- Hotelling( pool, nsam1, nsam2)
@@ -419,7 +471,12 @@ mdim <- dim(A1)[2]
     B <- resamples
     nsam1 <- dim(A1)[3]
     nsam2 <- dim(A2)[3]
-    pool<-procGPA( abind (A1, A2) ,scale=scale , tangentresiduals=TRUE)
+    pool<-procGPA( abind (A1, A2) ,scale=scale , tangentresiduals=FALSE)
+    tempool <- pool
+for (i in 1:(nsam1+nsam2)){
+tempool$tan[,i] <- pool$tan[,i]/norm(pool$tan[,i])*pool$rho[i]
+}
+pool<-tempool
     bootpool<-pool
     Gtem <- Goodall( pool, nsam1, nsam2)
     Htem <- Hotelling( pool, nsam1, nsam2)
@@ -502,119 +559,137 @@ pool2$tan[,(nsam1+1):(nsam1+nsam2)] <- pool$tan[,(nsam1+1):(nsam1+nsam2)] -
     out
 }
 
-Lambdamin<-function( pool , n1, n2, p=0){
-censiz<-centroid.size(pool$mshape)
-   tan1<- pool$tan[,1:n1]
-   tan2<-pool$tan[,(n1+1):(n1+n2)]
+
+ Lambdamin<-
+function (pool, n1, n2, p = 0) 
+{
+    censiz <- centroid.size(pool$mshape)
+    tan1 <- pool$tan[, 1:n1]
+    tan2 <- pool$tan[, (n1 + 1):(n1 + n2)]
+    kt <- dim(tan1)[1]
+    n <- n1 + n2
+    k <- pool$k
+    m <- pool$m
+    if (p == 0) {
+        p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+    }
 
 
-
-   kt <- dim(tan1)[1]
-   n <- n1+n2
-   k<-pool$k
-   m<-pool$m
+HH <- diag(k)
 
 
+mu1<-pool$mshape
 
+if (dim(tan1)[1] == k*m - m){
+ HH <- defh(k-1)
 
-   if (p == 0){
-    p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
+mu1<-preshape(pool$mshape)
 }
 
 
-if (m == 2){
-mu<- c( pool$mshape[,1], pool$mshape[,2]) 
+    if (m == 2) {
+        mu <- c(mu1[,1], mu1[, 2])      
+
+    }
+    if (m == 3) {
+        mu <- c(mu1[, 1], mu1[, 2], mu1[, 
+            3])
+
+    }
+
+
+
+
+
+    dd <- kt
+    X1 <- tan1 * 0
+    X2 <- tan2 * 0
+    S1 <- matrix(0, dd, dd)
+    S2 <- matrix(0, dd, dd)
+    for (i in 1:n1) {
+        X1[, i] <- (mu + tan1[, i])/norm(mu + tan1[, i])
+        S1 <- S1 + X1[, i] %*% t(X1[, i])
+    }
+    for (i in 1:n2) {
+        X2[, i] <- (mu + tan2[, i])/norm(mu + tan2[, i])
+        S2 <- S2 + X2[, i] %*% t(X2[, i])
+    }
+
+sumx1 <- 0
+sumx2 <- 0
+for (i in 1:n1){
+sumx1 <- sumx1 + X1[,i]
 }
-if (m == 3){
-mu<- c( pool$mshape[,1], pool$mshape[,2],pool$mshape[,3]) 
+for (i in 1:n2){
+sumx2 <- sumx2 + X2[,i]
 }
 
 
-dd <- kt
+    sum1 <- apply(X1, 1, sum)
+    sum2 <- apply(X2, 1, sum)
+    mean1 <- sum1/norm(sum1)
+    mean2 <- sum2/norm(sum2)
 
 
-X1 <- tan1*0
-X2 <- tan2*0
-S1 <- matrix (0, dd, dd)
-S2 <- matrix (0, dd, dd)
-
- for (i in 1:n1){
-  X1[,i] <- (mu + tan1[,i])/norm(mu + tan1[,i])
-S1 <- S1 + X1[,i]%*%t(X1[,i])
-}
- for (i in 1:n2){
-  X2[,i] <- (mu + tan2[,i])/norm(mu + tan2[,i])
-S2 <- S2 + X2[,i]%*%t(X2[,i])
-}
-
-sum1<- apply( X1, 1, sum)
-sum2<- apply( X2, 1, sum)
-mean1 <- sum1/norm(sum1)
-mean2 <- sum2/norm(sum2)
-
-
-bb1 <- mean1[1: (dd-1)]
-cc1 <- mean1[dd]
-bb2 <- mean2[1: (dd-1)]
-cc2 <- mean2[dd]
-
-
-
-A1 <- cc1/abs(cc1) * diag(dd-1) - cc1 / ( abs(cc1) + cc1**2) * bb1 %*%t(bb1) 
-M1 <- cbind(A1,-bb1)
-A1 <- cc2/abs(cc2) * diag(dd-1) - cc2 / ( abs(cc2) + cc2**2) * bb2 %*%t(bb2) 
-M2 <- cbind(A1,-bb2)
-
-G1 <- matrix (0, dd-1, dd-1)
-G2 <- matrix (0, dd-1, dd-1)
-
-
-
-
-
-for (iu in 1:(dd-1)){
-for (iv in iu:(dd-1)){
-G1[iu,iv] <- G1[iu,iv] + t((t(M1))[,iu])%*%S1%*%(t(M1))[,iv]
-G1[iv,iu]<-G1[iu,iv]
-G2[iu,iv] <- G2[iu,iv] + t((t(M2))[,iu])%*%S2%*%(t(M2))[,iv]
-G2[iv,iu]<-G2[iu,iv]
-}
-}
-G1 <- G1/n1 / norm(sum1/n1)**2
-G2 <- G2/n2 / norm(sum2/n2)**2
-
-
-    eva1 <- eigen(G1, symmetric = TRUE,EISPACK=TRUE)
+    bb1 <- mean1[1:(dd - 1)]
+    cc1 <- mean1[dd]
+    bb2 <- mean2[1:(dd - 1)]
+    cc2 <- mean2[dd]
+    A1 <- cc1/abs(cc1) * diag(dd - 1) - cc1/(abs(cc1) + cc1^2) * 
+        bb1 %*% t(bb1)
+    M1 <- cbind(A1, -bb1)
+    A1 <- cc2/abs(cc2) * diag(dd - 1) - cc2/(abs(cc2) + cc2^2) * 
+        bb2 %*% t(bb2)
+    M2 <- cbind(A1, -bb2)
+    G1 <- matrix(0, dd - 1, dd - 1)
+    G2 <- matrix(0, dd - 1, dd - 1)
+    for (iu in 1:(dd - 1)) {
+        for (iv in iu:(dd - 1)) {
+            G1[iu, iv] <- G1[iu, iv] + t((t(M1))[, iu]) %*% S1 %*% 
+                (t(M1))[, iv]
+            G1[iv, iu] <- G1[iu, iv]
+            G2[iu, iv] <- G2[iu, iv] + t((t(M2))[, iu]) %*% S2 %*% 
+                (t(M2))[, iv]
+            G2[iv, iu] <- G2[iu, iv]
+        }
+    }
+    G1 <- G1/n1/norm(sumx1/n1)^2
+    G2 <- G2/n2/norm(sumx2/n2)^2
+    eva1 <- eigen(G1, symmetric = TRUE, EISPACK = TRUE)
     pcar1 <- eva1$vectors[, 1:p]
     pcasd1 <- sqrt(abs(eva1$values[1:p]))
-    eva2 <- eigen(G2, symmetric = TRUE,EISPACK=TRUE)
+    eva2 <- eigen(G2, symmetric = TRUE, EISPACK = TRUE)
     pcar2 <- eva2$vectors[, 1:p]
     pcasd2 <- sqrt(abs(eva2$values[1:p]))
-    if ((pcasd1[p] < 1e-06)||(pcasd2[p] < 1e-06)) {
+    if ((pcasd1[p] < 1e-06) || (pcasd2[p] < 1e-06)) {
         offset <- 1e-06
         cat("*")
         pcasd1 <- sqrt(pcasd1^2 + offset)
         pcasd2 <- sqrt(pcasd2^2 + offset)
     }
-    Ahat1 <- n1*t(M1)%*%(pcar1%*%diag(1/pcasd1**2)%*%t(pcar1))%*%M1
-    Ahat2 <- n2*t(M2)%*%(pcar2%*%diag(1/pcasd2**2)%*%t(pcar2))%*%M2
-    Ahat <- (n/n1*Ahat1 + n/n2*Ahat2)
-    eva <- eigen(Ahat, symmetric = TRUE,EISPACK=TRUE)
+    Ahat1 <- n1 * t(M1) %*% (pcar1 %*% diag(1/pcasd1^2) %*% t(pcar1)) %*% 
+        M1
+    Ahat2 <- n2 * t(M2) %*% (pcar2 %*% diag(1/pcasd2^2) %*% t(pcar2)) %*% 
+        M2
+
+
+    Ahat <- ( Ahat1 +  Ahat2)
+    eva <- eigen(Ahat, symmetric = TRUE, EISPACK = TRUE)
 
 
 
-#print(eva$values)
+
     lambdamin <- eva$values[p+1]
-
-    pval <- 1 - pchisq(lambdamin, p+1 )
-#######
-    z<-list()
+    pval <- 1 - pchisq(lambdamin, p )
+#print(lambdamin)
+#print(pval)
+    z <- list()
     z$pval <- pval
     z$df <- p
     z$lambdamin <- lambdamin
-
     return(z)
 }
+
 
 Goodall<-function( pool , n1, n2, p=0){
    tan1<- pool$tan[,1:n1]
@@ -2424,9 +2499,30 @@ rw<-proc
 
 if ((alpha != 0)||(affine == TRUE)) {
 
+
 k<-dim(proc$mshape)[1]
 m<-dim(proc$mshape)[2]
 n<-dim(proc$mshape)[3]
+
+if (dim(proc$tan)[1]== (k*m-m) ){
+
+if (m == 2){
+He <- t( defh(k-1) )
+Ze<-He*0
+HH <- rbind( cbind( He, Ze ) , cbind( Ze, He ) )
+proc$tan <- HH %*% proc$tan
+}
+if (m == 3){
+He <- t( defh(k-1) )
+Ze <- He*0
+HH <- rbind( cbind( defh(k-1), Ze, Ze ) , cbind(Ze, defh(k-1) , Ze ) , cbind( Ze, Ze, defh(k-1) ) )
+proc$tan <- HH %*% proc$tan
+}
+}
+
+
+
+
 nconstr <- m + m*(m-1)/2 + 1
 M <- k*m - nconstr
 
@@ -3601,7 +3697,7 @@ procdistreflect<-function(x, y)
 	} 
 	riem
 }
-procrustes2d<-function(x, l1=1, l2=2, approxtangent=FALSE)
+procrustes2d<-function(x, l1=1, l2=2, approxtangent=FALSE, expomap=FALSE)
 {
 #input k x 2 x n real array, or k x n complex matrix
 #mean shape will have landmarks l1, l2 horizontal (l1 left, l2 right)
@@ -3672,6 +3768,15 @@ procrustes2d<-function(x, l1=1, l2=2, approxtangent=FALSE)
 	pca <- prcomp1(t(tanapprox))
 	z$tan<-tanapprox
 	} 
+
+if (expomap==TRUE){
+temp <- rv
+for (i in 1:(n)){
+temp[,i] <- rv[,i]/norm(rv[,i])*rho[i]
+}
+rv <- temp
+}
+
 	if (approxtangent==FALSE){
 	pca <- prcomp1(t(rv))
 	z$tan<-rv
@@ -3741,7 +3846,7 @@ test
 
 procGPA<-function(x,scale=TRUE,reflect=FALSE,eigen2d=FALSE,
 tol1=1e-05,tol2=tol1,tangentresiduals=TRUE,proc.output=FALSE,distances=TRUE,pcaoutput=TRUE,
-alpha = 0, affine = FALSE)
+alpha = 0, affine = FALSE,expomap=FALSE)
 {
 #
 #
@@ -3760,55 +3865,54 @@ n<-dim(x)[3]
 if (reflect==FALSE){
 if ((m == 2)&&(scale==TRUE)){
 if (eigen2d==TRUE){
-out<-procrustes2d(x,approxtangent=approxtangent)
+out<-procrustes2d(x,approxtangent=approxtangent,expomap=expomap)
 }
 else
 {
 out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,proc.output=proc.output,
-distances=distances,pcaoutput=pcaoutput,reflect=reflect)
+distances=distances,pcaoutput=pcaoutput,reflect=reflect,expomap=expomap)
 }                 
 }
 if ((m > 2)&&(scale==TRUE)){
 out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,proc.output=proc.output
-,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
+,distances=distances,pcaoutput=pcaoutput,reflect=reflect,expomap=expomap)
 }
 if (scale==FALSE){
 out<-procrustesGPA.rot(x,tol1,tol2,approxtangent=approxtangent,
-proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect,expomap=expomap)
 }
 }
 if (reflect==TRUE){
 if (scale==TRUE){
 out<-procrustesGPA(x,tol1,tol2,approxtangent=approxtangent,
-proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect,expomap=expomap)
 }
 if (scale==FALSE){
 out<-procrustesGPA.rot(x,tol1,tol2,approxtangent=approxtangent,
-proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect)
+proc.output=proc.output,distances=distances,pcaoutput=pcaoutput,reflect=reflect,expomap=expomap)
 }
 }
 out$stdscores<-out$scores
 out$scores<-out$rawscores
 
 if (approxtangent==FALSE){
+
 out$mshape <- out$mshape/centroid.size( out$mshape)
 for (i in 1:n){
 out$rotated[,,i]<- out$rotated[,,i]/centroid.size(out$rotated[,,i])
 }
-}
 
+}
 
 rw<-out
 rw <- shaperw(out, alpha=alpha , affine=affine )
-
-
 
 rw
 }
 
 
 procrustesGPA<-function (x, tol1 = 1e-05, tol2 = 1e-05,distances=TRUE,pcaoutput=TRUE,
-approxtangent=TRUE,proc.output=FALSE,reflect=FALSE) 
+approxtangent=TRUE,proc.output=FALSE,reflect=FALSE,expomap=FALSE) 
 {
 	z <- list(k = 0, m = 0, n = 0, 
 	rotated = 0, 
@@ -3831,6 +3935,18 @@ approxtangent=TRUE,proc.output=FALSE,reflect=FALSE)
     n <- dim(x)[3]
     x<-cnt3(x)
     zgpa <- fgpa(x, tol1, tol2,proc.output=proc.output,reflect=reflect)
+
+    if (distances == TRUE) {
+    if (proc.output){cat("Shape distances and sizes calculation ...\n")}
+    size <- rep(0, times = n)
+    rho <- rep(0, times = n)
+    size <- apply(x, 3, centroid.size)
+    rho <- apply(x, 3, y <- function(x) {
+        riemdist(x, zgpa$mshape)
+    })
+    }
+
+
     if (pcaoutput==TRUE){
     if (proc.output){cat("PCA calculation ...\n")}
     tanpartial <- matrix(0, k * m - m, n)
@@ -3840,6 +3956,15 @@ approxtangent=TRUE,proc.output=FALSE,reflect=FALSE)
         tanpartial[, i] <- (ident - gamma %*% t(gamma)) %*% 
         as.vector(preshape(zgpa$r.s.r[, , i]))
     }
+
+if (expomap==TRUE){
+temp <- tanpartial
+for (i in 1:(n)){
+temp[,i] <- tanpartial[,i]/norm(tanpartial[,i])*rho[i]
+}
+tanpartial<-temp
+}
+
     tan <- zgpa$r.s.r[, 1, ] - zgpa$mshape[, 1]
     for (i in 2:m) {
         tan <- rbind(tan, zgpa$r.s.r[, i, ] - zgpa$mshape[, i])
@@ -3867,32 +3992,28 @@ approxtangent=TRUE,proc.output=FALSE,reflect=FALSE)
     z$pcasd <- pca$sdev
     z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
     }
-    if (distances == TRUE) {
-    if (proc.output){cat("Shape distances and sizes calculation ...\n")}
-    size <- rep(0, times = n)
-    rho <- rep(0, times = n)
-    size <- apply(x, 3, centroid.size)
-    rho <- apply(x, 3, y <- function(x) {
-        riemdist(x, zgpa$mshape)
-    })
-               if (proc.output){cat("Finished.\n")}
+
+   if (distances == TRUE) {
     z$rho <- rho
     z$size <- size
     z$rmsrho <- sqrt(mean(rho^2))
     z$rmsd1 <- sqrt(mean(sin(rho)^2))
     }
-    
+ 
     z$rotated <- zgpa$r.s.r    
     z$mshape <- zgpa$mshape
     z$k <- k
     z$m <- m
     z$n <- n
+
+              if (proc.output){cat("Finished.\n")}
+
     return(z)
 }
 
 
 procrustesGPA.rot<-function (x, tol1 = 1e-05, tol2 = 1e-05, distances = TRUE, 
-pcaoutput=TRUE, approxtangent=TRUE,proc.output=FALSE,reflect=FALSE) 
+pcaoutput=TRUE, approxtangent=TRUE,proc.output=FALSE,reflect=FALSE, expomap=FALSE) 
 {
 	z <- list(k = 0, m = 0, n = 0, 
 	rotated = 0, 
@@ -3913,10 +4034,25 @@ percent = 0,
     k <- dim(x)[1]
     m <- dim(x)[2]
     n <- dim(x)[3]
+
+
+
 #    print("GPA (rotation only)")
     x<-cnt3(x)
     zgpa <- fgpa.rot(x, tol1, tol2,proc.output=proc.output,reflect=reflect)
     tanpartial <- matrix(0, k * m - m, n)
+
+    if (distances == TRUE) {
+       if (proc.output){cat("Shape distances and sizes calculation ...\n")}
+        size <- rep(0, times = n)
+        rho <- rep(0, times = n)
+        size <- apply(x, 3, centroid.size)
+        rho <- apply(x, 3, y <- function(x) {
+            riemdist(x, zgpa$mshape)
+        })
+}
+
+
     
   if (pcaoutput==TRUE){
       if (proc.output){cat("PCA calculation ...\n")}
@@ -3926,6 +4062,17 @@ percent = 0,
         tanpartial[, i] <- (ident - gamma %*% t(gamma)) %*% 
         as.vector(preshape(zgpa$r.s.r[, , i]))
     }
+
+if (expomap==TRUE){
+temp <- tanpartial
+for (i in 1:(n)){
+temp[,i] <- tanpartial[,i]/norm(tanpartial[,i])*rho[i]
+}
+tanpartial<-temp
+}
+
+
+
     tan <- zgpa$r.s.r[, 1, ] - zgpa$mshape[, 1]
     for (i in 2:m) {
         tan <- rbind(tan, zgpa$r.s.r[, i, ] - zgpa$mshape[, i])
@@ -3958,14 +4105,6 @@ percent = 0,
     }
 
     if (distances == TRUE) {
-       if (proc.output){cat("Shape distances and sizes calculation ...\n")}
-        size <- rep(0, times = n)
-        rho <- rep(0, times = n)
-        size <- apply(x, 3, centroid.size)
-        rho <- apply(x, 3, y <- function(x) {
-            riemdist(x, zgpa$mshape)
-        })
-           if (proc.output){cat("Finished.\n")}
     z$rho <- rho
     z$size <- size
     z$rmsrho <- sqrt(mean(rho^2))
@@ -3976,7 +4115,7 @@ percent = 0,
     z$k <- k
     z$m <- m
     z$n <- n
-
+           if (proc.output){cat("Finished.\n")}
     return(z)
 }
 
@@ -4106,7 +4245,7 @@ relwarps<-function(mshape, rotated, alpha)
 	z$rwpercent <- percentrw
 	return(z)
 }
-riemdist<-function(x, y)
+riemdist<-function(x, y, reflect=FALSE)
 {
 #input two k x m matrices x, y or complex k-vectors
 #output Riemannian distance rho between them 
@@ -4116,6 +4255,7 @@ riem <- 0
 }
 if (sum((x-y)**2)!=0){
 
+if (reflect==FALSE) { 
 	if(ncol(as.matrix(x)) < 3) {
           if (is.complex(x)==FALSE){x<-realtocomplex(x)}
           if (is.complex(y)==FALSE){y<-realtocomplex(y)} 
@@ -4138,8 +4278,22 @@ riem<-c(acos(min(1,(Mod(st(preshape(x)) %*% preshape(y))))))
 		riem <- acos(min(sum(ev),1))
 	}
 }
+if (reflect==TRUE){
+
+		m <- ncol(x)
+		z <- preshape(x)
+		w <- preshape(y)
+		Q <- t(z) %*% w %*% t(w) %*% z
+
+		ev <- sqrt(abs(eigen(Q, symm = TRUE)$values))
+
+		riem <- acos(min(sum(ev),1))
+}
+
+}
 riem
 }
+
 riemdist.complex<-function(z, w)
 {
 #input complex k-vectors z, w

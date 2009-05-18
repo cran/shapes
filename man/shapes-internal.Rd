@@ -144,6 +144,7 @@
 \alias{tantofigure}
 \alias{tantofigurefull}
 \alias{tantopreshape}
+\alias{testshapes}
 \alias{vec1}
 \title{Internal function(s)}
 \description{Internal function(s)}

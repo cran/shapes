@@ -9,7 +9,7 @@ components, and some summary statistics.
 \usage{
 procGPA(x, scale = TRUE, reflect = FALSE, eigen2d = FALSE, 
 tol1 = 1e-05, tol2 = tol1, tangentresiduals = TRUE, proc.output=FALSE, 
-distances=TRUE, pcaoutput=TRUE, alpha=0, affine=FALSE)
+distances=TRUE, pcaoutput=TRUE, alpha=0, affine=FALSE, expomap=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -45,6 +45,8 @@ are emphasized, if alpha = -1 then small scale variations are emphasised.
 Requires m=2 and m=3 dimensional data if alpha $!=$ 0.}
 \item{affine}{Logical. If TRUE then only the affine subspace of shape variability is 
 considered.} 
+\item{expomap}{Logical. If TRUE then the exponential map tangent co-ordinates are used instead
+of the the partial tangent shape co-ordinates}
 }
 \value{A list with components
 \item{k}{no of landmarks}

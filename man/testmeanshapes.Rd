@@ -23,7 +23,7 @@ Sw + 0.000001 (Identity matrix) and a `*' is printed in the output.
 
 }
 \usage{
-testmeanshapes(A, B, resamples = 1000, replace = FALSE, scale= TRUE)
+testmeanshapes(A, B, resamples = 1000, replace = TRUE, scale= TRUE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{

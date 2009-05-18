@@ -5,17 +5,18 @@
 \description{Calculates the Riemannian shape distance rho between two
  configurations}   
 \usage{
-riemdist(x, y)
+riemdist(x, y, reflect=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
   \item{x}{k x m matrix  (or complex k-vector  for 2D data) 
 where k = number of landmarks and m = no of dimensions} 
  \item{y}{k x m matrix  (or complex k-vector  for 2D data)} 
+ \item{reflect}{ Logical. If reflect = TRUE then reflection invariance is included.}
 }
 \value{
   The Riemannian shape distance rho between the two configurations. 
-Note 0 <= rho <= pi/2 } 
+Note 0 <= rho <= pi/2 if no reflection invariance} 
 \references{
    Kendall, D. G. (1984). 
    Shape manifolds,  Procrustean metrics and complex
