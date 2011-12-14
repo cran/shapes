@@ -5,7 +5,7 @@
 \description{
 Carries out tests to examine differences in mean shape
 between two independent populations, for $m=2$ or $m=3$ dimensional data. 
-Tests are carried out using the Procrustes residuals. 
+Tests are carried out using tangent co-ordinates. 
 
 H : Hotelling $T^2$ statistic (see Dryden and Mardia, 1998, equ.(7.4))
 

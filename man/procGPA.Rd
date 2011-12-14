@@ -69,7 +69,7 @@ tan. If alpha $!=0$ then it is the percent of non-affine variation of the relati
 If affine is TRUE it is the percentage of total shape variability of each affine 
 component.}
 \item{size}{the centroid sizes of the configurations}
-\item{scores}{standardised PC scores (each with unit variance) using 
+\item{stdscores}{standardised PC scores (each with unit variance) using 
 tan} 
 \item{rawscores}{raw PC scores using tan} 
 \item{rho}{Kendall's Riemannian distance rho to the mean shape}

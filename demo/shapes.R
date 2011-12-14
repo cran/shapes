@@ -35,11 +35,12 @@ pairs(x,panel=function(x,y) text(x,y,gor.gp),
    label=c("s","rho","score 1","score 2","score 3"))
 
 
-#Hotelling's Tsq test
+#Some tests                 
 test1<-testmeanshapes(gorf.dat,gorm.dat)
 
-#Goodall's isotropic test
-test2<-testmeanshapes(gorf.dat,gorm.dat,Hotelling=FALSE)
+
+print(test1)
+
 
 cat("Highly significant difference in mean shape")
 
@@ -50,7 +51,7 @@ TT<-gorf$mshape
 YY<-gorm$mshape
 par(mfrow=c(1,2))
 YY<-TT+(YY-TT)*mag
-tpsgrid(TT,YY,-0.6,-0.6,1.2,2,0.1,22) 
+tpsgrid(TT,YY,-150,-150,300,2,0.1,22) 
 title("TPS grid: Female mean (left) to Male mean (right)")   
 
 cat("##########################################################\n")
@@ -69,4 +70,4 @@ plot(out$rawscores[,2],out$rawscores[,3],xlab="PC2",ylab="PC3")
 plot(out$rawscores[,1],out$rawscores[,3],xlab="PC1",ylab="PC3")
 plot(out$size,out$rho,xlab="size",ylab="rho")
 title("Size versus shape distance")
-
+

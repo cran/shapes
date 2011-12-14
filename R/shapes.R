@@ -1,12 +1,12 @@
 #-----------------------------------------------------------------------
 #
 # Statistical shape analysis routines
-# written by Ian Dryden - suitable for use in R
-# (c) Ian Dryden, University of Nottingham
-#                 University of South Carolina
-#                         2000-2009
+# written by Ian Dryden in R  (see http://cran.r-project.org) 
+# (c) Ian Dryden
+#     University of South Carolina
+#                        2011
 #
-#          Version 1.1-3  May 18, 2009 
+#          Version 1.1-4  December 14, 2011 
 #
 #----------------------------------------------------------------------
 #
@@ -16,6 +16,445 @@
 #
 #
 ###########################################################################
+
+
+############################################################
+#
+#  FUNCTIONS FOR CALCULATING NON-EUCLIDEAN MEANS AND DISTANCES
+#  OF COVARIANCE MATRICES
+#
+############################################################
+# Log Euclidean mean: Sigma_L
+
+estLogEuclid<-function(S,weights=1){
+M <- dim(S)[3]
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+sum<-S[,,1]*0
+for (j in 1:M){
+eS<-eigen(S[,,j],symmetric=TRUE)
+sum<-sum+
+weights[j]*eS$vectors%*%diag(log(eS$values))%*%t(eS$vectors)/
+            sum(weights)
+}
+ans<-sum
+eL<-eigen(ans,symmetric=TRUE)
+eL$vectors%*%diag(exp(eL$values))%*%t(eL$vectors)
+}
+
+
+estPowerEuclid<-function(S,weights=1,alpha=0.5){
+M <- dim(S)[3]
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+sum<-S[,,1]*0
+for (j in 1:M){
+eS<-eigen(S[,,j],symmetric=TRUE)
+sum<-sum+
+weights[j]*eS$vectors%*%diag((eS$values)**alpha)%*%t(eS$vectors)/
+            sum(weights)
+}
+ans<-sum
+eL<-eigen(ans,symmetric=TRUE)
+eL$vectors%*%diag((eL$values)**(1/alpha))%*%t(eL$vectors)
+}
+
+
+
+
+# Riemannian (weighted mean) : Sigma_R
+
+estLogRiem2<-function(S,weights=1){
+M <- dim(S)[3]
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+check<-9
+tau<-1
+Hold<-99999
+mu<-estLogEuclid(S,weights)
+while (check>0.0000000001){
+ev<-eigen(mu,symmetric=TRUE)
+logmu<- ev$vectors%*%diag(log(ev$values))%*%t(ev$vectors)
+Hnew<-Re(Hessian2(S,mu,weights))
+logmunew<- logmu+tau*Hnew
+ev<-eigen(logmunew,symmetric=TRUE)
+mu<- ev$vectors%*%diag(exp(ev$values))%*%t(ev$vectors)
+check <- Re(Enorm(Hold)-Enorm(Hnew))
+if (check < 0){ 
+tau <- tau/2 
+check <- 999999
+}
+Hold<-Hnew
+}
+mu
+}
+
+# Hessian used in calculating Sigma_R
+
+Hessian2 <- function(S,Sigma,weights=1){
+M <- dim(S)[3]
+k<-dim(S)[1]
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+ev0<-eigen(Sigma,symmetric=TRUE)
+shalf <- ev0$vectors %*% (diag( sqrt((ev0$values)))) %*%t( ev0$vectors )  
+sumit<-matrix(0,k,k)
+for (i in 1:(M)){
+ev2<- eigen(shalf%*%solve(S[,,i])%*%shalf,symmetric=TRUE)
+sumit<-sumit + weights[i]*ev2$vectors %*% diag ( log((ev2$values)) ) %*% t( ev2$vectors )/sum(weights)
+}
+-sumit
+}
+
+# Euclidean : Sigma_E
+
+estEuclid<-function(S,weights=1){
+M <- dim(S)[3]
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+sum<-S[,,1]*0
+for (j in 1:M){
+sum<-sum+S[,,j]*weights[j]/sum(weights)
+}
+sum
+}
+# Cholesky mean : Sigma_C
+
+estCholesky<-function(S,weights=1){
+M <- dim(S)[3]
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+sum<-S[,,1]*0
+for (j in 1:M){
+sum<-sum+t(chol(S[,,j]))*weights[j]/sum(weights)
+}
+cc<-sum
+cc%*%t(cc)
+}
+
+
+estSS<-function(S,weights=1){
+M <- dim(S)[3]
+k<-dim(S)[1]
+H<-defh(k)
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+Q<-array(0,c(k+1,k,M))
+for (j in 1:M){
+Q[,,j]<-t(H)%*%t(chol(S[,,j]))
+}
+ans<-procWGPA(Q,fixcovmatrix=diag(k+1),scale=FALSE,reflect=TRUE,
+                     sampleweights=weights)
+H%*%ans$mshape%*%t(H%*%ans$mshape)
+}
+
+
+estShape<-function(S,weights=1){
+M <- dim(S)[3]
+k<-dim(S)[1]
+H<-defh(k)
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+Q<-array(0,c(k+1,k,M))
+for (j in 1:M){
+Q[,,j]<-t(H)%*%t(chol(S[,,j]))
+}
+ans<-procWGPA(Q,fixcovmatrix=diag(k+1),scale=TRUE,reflect=TRUE,
+                     sampleweights=weights)
+H%*%ans$mshape%*%t(H%*%ans$mshape)
+}
+
+
+
+estRiemLe <- function(S,weights){
+M<-dim(S)[3]
+k<-dim(S)[1]
+if (M!=2) print("Calculation not possible!")
+if (M == 2){
+P1 <- S[,,1]
+P2<- S[,,2]
+detP1<- prod(eigen(P1)$values)
+detP2<- prod(eigen(P2)$values)
+P1 <- P1/(detP1)^(1/k)
+P2 <- P2/(detP2)^(1/k)
+P1inv <- solve(P1)
+P12sq <- P1inv %*% P2%*%P2 %*% P1inv
+tem <- eigen(P12sq,symmetric=TRUE)
+A2 <- tem$vectors %*% diag( log(tem$values) ) %*%t(tem$vectors)
+logPs2 <- weights[2]*A2
+tem2<- eigen(logPs2,symmetric=TRUE)
+Ps2 <- tem2$vectors %*% diag( exp(tem2$values) ) %*%t(tem2$vectors)
+P12s <- P1 %*% Ps2 %*% P1
+tem3 <- eigen(P12s,symmetric=TRUE)
+P12sA <- tem3$vectors %*% diag( sqrt(tem3$values) ) %*% t( tem3$vectors )
+Ptildes <- (detP1*(detP2/detP1)^weights[2])^(1/k)*P12sA
+Ptildes
+}
+}
+
+
+
+
+
+
+##########distances#################################
+
+distRiemPennec <- function( P1, P2){
+eig <- eigen(P1,symmetric=TRUE)
+P1half <- eig$vectors %*% diag(sqrt(eig$values)) %*% t(eig$vectors)
+P1halfinv <- solve(P1half)
+AA <- P1halfinv%*%P2%*%P1halfinv
+tem <- eigen(AA,symmetric=TRUE)
+A2 <- tem$vectors %*% diag( log(tem$values) ) %*%t(tem$vectors)
+dd <- Enorm(A2)
+dd
+}
+
+distLogEuclidean <- function( P1, P2){
+eig <- eigen(P1,symmetric=TRUE)
+logP1<- eig$vectors%*%diag( log(eig$values) ) %*%t(eig$vectors)
+tem <- eigen(P2,symmetric=TRUE) 
+logP2 <- tem$vectors %*% diag( log(tem$values) ) %*%t(tem$vectors)
+dd <- Enorm( logP1-logP2)
+dd
+}
+
+distRiemannianLe <-
+function( P1, P2){
+dd <- distRiemPennec( P1%*%t(P1), P2%*%t(P2))/2
+dd
+}
+
+distProcrustesSizeShape<-function(P1,P2){
+H<-defh(dim(P1)[1])
+Q1<-t(H)%*%t(chol(P1))
+Q2<-t(H)%*%t(chol(P2))
+ans<- sqrt(centroid.size(Q1)**2 + centroid.size(Q2)**2 - 2*
+   centroid.size(Q1)*centroid.size(Q2)*cos(riemdist(Q1,Q2)))
+ans
+}
+
+distProcrustesFull <- function(P1,P2){
+H<-defh(dim(P1)[1])
+Q1<-t(H)%*%t(chol(P1))
+Q2<-t(H)%*%t(chol(P2))
+ans<- riemdist(Q1,Q2)
+ans
+}
+
+
+distPowerEuclidean<-function(P1,P2,alpha=1/2){
+if (alpha != 0){
+eS<-eigen(P1,symmetric=TRUE)
+Q1<- eS$vectors%*%diag((eS$values)^alpha)%*%t(eS$vectors)
+eS<-eigen(P2,symmetric=TRUE)
+Q2<- eS$vectors%*%diag((eS$values)^alpha)%*%t(eS$vectors)
+dd <- Enorm( Q1 - Q2 )/abs(alpha)
+}
+if (alpha == 0){
+dd <- distLogEuclidean(P1,P2)
+}
+dd
+}
+
+distCholesky<-function(P1,P2){
+H<-defh(dim(P1)[1])
+Q1<-t(H)%*%t(chol(P1))
+Q2<-t(H)%*%t(chol(P2))
+ans <- Enorm( Q1 - Q2)
+ans
+}
+
+distEuclidean<-function(P1,P2){
+ans <- Enorm( P1 - P2 )
+ans
+}
+
+##################
+
+
+distcov <- function( S1, S2 , method="Riemannian",alpha=1/2){
+if (method=="Procrustes"){
+dd <- distProcrustesSizeShape(S1,S2)
+}
+if (method=="ProcrustesShape"){
+dd <- distProcrustesFull(S1,S2)
+}
+if (method=="Riemannian"){
+dd <- distRiemPennec(S1,S2)
+}
+if (method=="Cholesky"){
+dd <- distCholesky(S1,S2)
+}
+if (method == "Power"){
+dd <- distPowerEuclidean(S1,S2,alpha)
+}
+if (method == "Euclidean"){
+dd <- distEuclidean(S1,S2)
+}
+if (method == "LogEuclidean"){
+dd <- distLogEuclidean(S1,S2)
+}
+if (method=="RiemannianLe"){
+dd <- distRiemannianLe(S1,S2)
+}
+dd
+}
+
+
+estcov <- function( S , method="Riemannian",weights=1,alpha=1/2){
+out<-list(mean=0,sd=0, pco=0, eig=0)
+M<-dim(S)[3]
+if (length(weights)==1){
+weights <- rep(1,times=M)
+}
+
+if (method=="Procrustes"){
+dd <- estSS(S,weights)
+}
+if (method=="ProcrustesShape"){
+dd <- estShape(S,weights)
+}
+if (method=="Riemannian"){
+dd <- estLogRiem2(S,weights)
+}
+if (method=="Cholesky"){
+dd <- estCholesky(S,weights)
+}
+if (method == "Power"){
+dd <- estPowerEuclid(S,weights,alpha)
+}
+if (method == "Euclidean"){
+dd <- estEuclid(S,weights)
+}
+if (method == "LogEuclidean"){
+dd <- estLogEuclid(S,weights)
+}
+if (method=="RiemannianLe"){
+dd <- estRiemLe(S,weights)
+}
+out$mean <- dd
+sum <- 0 
+for (i in 1:M){
+sum <- sum + weights[i]*distcov(S[,,i],dd)**2/sum(weights)
+}
+out$sd <- sqrt(sum)
+
+dist<-matrix(0,M,M)
+for (i in 2:M){
+for (j in 1:(i-1)){
+dist[i,j] <- distcov( S[,,i],S[,,j] , method=method )
+dist[j,i] <- dist[i,j]
+}
+}
+ans<-cmdscale(dist, k=3, eig = TRUE, add = TRUE, x.ret = TRUE)
+out$pco <- ans$points
+out$eig <- ans$eig
+
+out
+}
+
+##########################
+
+shapes.cva <- function( X , groups , scale=TRUE, ncv=2){
+g <- dim( table ( groups ) )
+ans <- procGPA( X , scale=scale)
+
+if (scale==TRUE) pp <- (ans$k-1)*ans$m - (ans$m*(ans$m-1)/2) - 1
+if (scale==FALSE) pp <- (ans$k-1)*ans$m - (ans$m*(ans$m-1)/2) 
+
+pracdim <- min( pp,  ans$n - g)
+out <- lda( ans$scores[,1:pracdim] , groups)
+print((out))
+cv <- predict(out,dimen=3)$x
+if (dim(cv)[2]==1) {
+cv <- cbind( cv, rnorm(dim(cv)[1])/1000 )
+}
+if (ncv==2){
+eqscplot(cv,type="n",xlab="CV1",ylab="CV2")
+text(cv, labels=groups)
+}
+if (ncv==3){
+shapes3d(cv,color=groups,axes3=TRUE)
+}
+cv
+}
+
+
+groupstack<-function( A1, A2, A3=0, A4=0, A5=0, A6=0, A7=0, A8=0){
+out<-list(x=0,groups="")
+dat <- abind(A1,A2)
+group <- c(rep(1,times=dim(A1)[3]),rep(2,times=dim(A2)[3]))
+if (is.array(A3)){
+dat <- abind(dat,A3)
+group <- c(group,rep(3,times=dim(A3)[3]))
+if (is.array(A4)){
+dat <- abind(dat,A4)
+group <- c(group,rep(4,times=dim(A4)[3]))
+if (is.array(A5)){
+dat <- abind(dat,A5)
+group <- c(group,rep(5,times=dim(A5)[3]))
+if (is.array(A6)){
+dat <- abind(dat,A6)
+group <- c(group,rep(6,times=dim(A6)[3]))
+if (is.array(A7)){
+dat <- abind(dat,A7)
+group <- c(group,rep(7,times=dim(A7)[3]))
+if (is.array(A8)){
+dat <- abind(dat,A8)
+group <- c(group,rep(8,times=dim(A8)[3]))
+}
+}
+}
+}
+}
+}
+out$x <- dat
+out$groups <- group
+out
+}
+
+ 
+
+
+
+###########################
+
+
+transformations<-function(Xrotated,Xoriginal){
+# outputs the translations, rotations and 
+# scalings for ordinary Procrustes rotation 
+# of each individual in Xoriginal to the 
+# Procrustes rotated individuals in Xrotated
+X1<-Xrotated
+X2<-Xoriginal
+n<-dim(X1)[3]
+m<-dim(X1)[2]
+translation<-matrix(0,m,n)
+scale<-rep(0,times=n)
+rotation<-array(0,c(m,m,n))
+for (i in 1:n){
+translation[,i]<- -apply(X2[,,i],2,mean)
+ans<-procOPA(X1[,,i],X2[,,i])
+scale[i]<-ans$s
+rotation[,,i]<-ans$R
+}
+out<-list(translation=0,scale=0,rotation=0)
+out$translation<-translation
+out$scale<-scale
+out$rotation<-rotation
+out
+}
+
+
 iglogl<- function( x ,lam, nlam){
 gamma<- abs(x[1])
 alpha<- gamma/ mean(1/lam[1:nlam])
@@ -25,7 +464,8 @@ ll <-  - (gamma+1) * sum( log(lam[1:nlam] )) - alpha * sum (1/lam[1:nlam]) +
 }
 
 
-procWGPA<- function( x, fixcovmatrix=FALSE, initial="Identity", maxiterations=10, scale=TRUE, prior="Exponential",diagonal=TRUE,
+procWGPA<- function( x, fixcovmatrix=FALSE, initial="Identity", maxiterations=10, 
+scale=TRUE, reflect=FALSE, prior="Exponential",diagonal=TRUE,
   sampleweights="Equal"){
 X<-x
 priorargument<-prior
@@ -58,13 +498,13 @@ mu<-procGPA(X,scale=scale)$mshape
 
 
 
-cat("Iteration 1 \n")
+#cat("Iteration 1 \n")
 
 if (fixcovmatrix[1]!=FALSE){
 Sigmak <- fixcovmatrix
 }
 
-ans<-procWGPA1(X,mu,metric=Sigmak,scale=scale,sampleweights=sampleweights)
+ans<-procWGPA1(X,mu,metric=Sigmak,scale=scale,reflect=reflect,sampleweights=sampleweights)
 
 
 if ((maxiterations>1)&&(fixcovmatrix[1]==FALSE)){
@@ -142,7 +582,7 @@ newmetric <- fixcovmatrix
 
 ans2<-procWGPA1(X, ans$mshape,  metric= newmetric ,scale=scale,sampleweights=sampleweights)
 plotshapes(ans2$rotated)
-dif<-norm( (ans$Sigmak - ans2$Sigmak) )
+dif<-Enorm( (ans$Sigmak - ans2$Sigmak) )
 ans<-ans2
 cat(c(it," ",dif," \n"))
 }
@@ -159,7 +599,8 @@ ans
 
 
 
-procWGPA1 <- function( X, mu, metric="Identity", scale=TRUE, sampleweights="Equal"){
+procWGPA1 <- function( X, mu, metric="Identity", scale=TRUE, 
+          reflect=FALSE, sampleweights="Equal"){
 
 
 
@@ -223,7 +664,7 @@ while (dif3 > 0.00001){
 
 for (i in 1:n){
 old<-mu
-tem<- procOPA( Siginvhalf%*%mu , Xstar[,,i],scale=scale)
+tem<- procOPA( Siginvhalf%*%mu , Xstar[,,i],scale=scale,reflect=reflect)
 Gammai<- tem$R
 betai <- tem$s
 #ci <- t(one)%*% Siginvhalf %*% X[,,i] %*% Gammai*betai/k
@@ -378,11 +819,11 @@ mdim <- dim(A1)[2]
     B <- nperms
     nsam1 <- dim(A1)[3]
     nsam2 <- dim(A2)[3]
-    pool<-procGPA( abind (A1, A2) , scale=scale, tangentresiduals = FALSE)
+    pool<-procGPA( abind (A1, A2) , scale=scale, tangentresiduals = FALSE, pcaoutput=FALSE)
 
     tempool <- pool
 for (i in 1:(nsam1+nsam2)){
-tempool$tan[,i] <- pool$tan[,i]/norm(pool$tan[,i])*pool$rho[i]
+tempool$tan[,i] <- pool$tan[,i]/Enorm(pool$tan[,i])*pool$rho[i]
 }
 pool<-tempool
 
@@ -471,10 +912,10 @@ mdim <- dim(A1)[2]
     B <- resamples
     nsam1 <- dim(A1)[3]
     nsam2 <- dim(A2)[3]
-    pool<-procGPA( abind (A1, A2) ,scale=scale , tangentresiduals=FALSE)
+    pool<-procGPA( abind (A1, A2) ,scale=scale , tangentresiduals=FALSE, pcaoutput=FALSE)
     tempool <- pool
 for (i in 1:(nsam1+nsam2)){
-tempool$tan[,i] <- pool$tan[,i]/norm(pool$tan[,i])*pool$rho[i]
+tempool$tan[,i] <- pool$tan[,i]/Enorm(pool$tan[,i])*pool$rho[i]
 }
 pool<-tempool
     bootpool<-pool
@@ -607,11 +1048,11 @@ mu1<-preshape(pool$mshape)
     S1 <- matrix(0, dd, dd)
     S2 <- matrix(0, dd, dd)
     for (i in 1:n1) {
-        X1[, i] <- (mu + tan1[, i])/norm(mu + tan1[, i])
+        X1[, i] <- (mu + tan1[, i])/Enorm(mu + tan1[, i])
         S1 <- S1 + X1[, i] %*% t(X1[, i])
     }
     for (i in 1:n2) {
-        X2[, i] <- (mu + tan2[, i])/norm(mu + tan2[, i])
+        X2[, i] <- (mu + tan2[, i])/Enorm(mu + tan2[, i])
         S2 <- S2 + X2[, i] %*% t(X2[, i])
     }
 
@@ -627,8 +1068,8 @@ sumx2 <- sumx2 + X2[,i]
 
     sum1 <- apply(X1, 1, sum)
     sum2 <- apply(X2, 1, sum)
-    mean1 <- sum1/norm(sum1)
-    mean2 <- sum2/norm(sum2)
+    mean1 <- sum1/Enorm(sum1)
+    mean2 <- sum2/Enorm(sum2)
 
 
     bb1 <- mean1[1:(dd - 1)]
@@ -653,8 +1094,8 @@ sumx2 <- sumx2 + X2[,i]
             G2[iv, iu] <- G2[iu, iv]
         }
     }
-    G1 <- G1/n1/norm(sumx1/n1)^2
-    G2 <- G2/n2/norm(sumx2/n2)^2
+    G1 <- G1/n1/Enorm(sumx1/n1)^2
+    G2 <- G2/n2/Enorm(sumx2/n2)^2
     eva1 <- eigen(G1, symmetric = TRUE, EISPACK = TRUE)
     pcar1 <- eva1$vectors[, 1:p]
     pcasd1 <- sqrt(abs(eva1$values[1:p]))
@@ -701,7 +1142,7 @@ Goodall<-function( pool , n1, n2, p=0){
    if (p == 0){
     p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
 }
-    top <-  norm( apply(tan1,1,mean) - apply(tan2,1,mean) )**2
+    top <-  Enorm( apply(tan1,1,mean) - apply(tan2,1,mean) )**2
     bot <- sum(diag(var(t(tan1))))* (n1-1) +  sum(diag(var(t(tan2)))) * (n2-1)
     Fstat <- ((n1 + n2 - 2)/(1/n1 + 1/n2) * top)/bot
     pval <- 1 - pf(Fstat, p, (n1 + n2 - 2) * p)
@@ -942,10 +1383,10 @@ for (i in 1:k){
 lines3d(rbind(TT[i,],YY[i,]),col=1)
 }
 for (j in 1:kx){
-    lines3d(phi[ ( (j-1)*ky+1) : (ky*j) ,],color=8)
+    lines3d(phi[ ( (j-1)*ky+1) : (ky*j) ,],color=3)
 }
 for (j in 1:ky){
-    lines3d(phi[  (0:(kx-1)*ky) + j ,],color=8)
+    lines3d(phi[  (0:(kx-1)*ky) + j ,],color=3)
 }
 }
 }
@@ -1742,7 +2183,7 @@ prcomp1<-function (x, retx = TRUE, center = TRUE, scale. = FALSE, tol = NULL)
 {
     x <- as.matrix(x)
     x <- scale(x, center = center, scale = scale.)
-    s <- svd(x, nu = 0)
+    s <- svd(x, nu = 0, LINPACK=FALSE)
     if (!is.null(tol)) {
         rank <- sum(s$d > (s$d[1] * tol))
         if (rank < ncol(x)) 
@@ -1795,7 +2236,7 @@ mx3<-max(x[,3,])
 
 
 procOPA<-function(A,B,scale=TRUE,reflect=FALSE){
-out<-list(R=0,s=0,Ahat=0,Bhat=0,OSS=0)
+out<-list(R=0,s=0,Ahat=0,Bhat=0,OSS=0,rmsd=0)
 if (is.complex(sum(A))==TRUE){
 k<-length(A)
 Areal<-matrix(0,k,2)
@@ -1810,6 +2251,7 @@ Breal[,1]<-Re(B)
 Breal[,2]<-Im(B)
 B<-Breal
 }
+k<-dim(A)[1]
 if (reflect==FALSE){
 R<-fort.ROTATION(A,B)} else 
 {
@@ -1833,6 +2275,7 @@ out$s<-s
 out$Ahat<-Ahat
 out$Bhat<-Bhat
 out$OSS<-OSS
+out$rmsd <- sqrt(OSS/k)
 out
 }
 defplotsize2<-function(Y,project=c(1,2))
@@ -2463,7 +2906,7 @@ ze <- rep(0,times=k)
     tem <- c( -gamma*beta* mu , ze,  beta*alpha* omega ) /
                    sqrt(beta^2*alpha*gamma^2 + beta^2*gamma*alpha^2) 
     tem2 <- tem - u5*sum(u5*tem)
-    u4 <- tem2/norm(tem2) 
+    u4 <- tem2/Enorm(tem2) 
 
      
 
@@ -2925,7 +3368,7 @@ movie<-function(mean, pc, sd, xl, xu, yl, yu, lineorder,movielength=20)
 	plot(mean[c(1:k)], mean[c((k + 1):(2 * k))], xlim = c(xl, xu), ylim = c(
 		yl, yu), xlab = " ", ylab = " ", axes = FALSE)
 }
-norm<-function(X)
+Enorm<-function(X)
 {
 #finds Euclidean norm of real matrix X
 	if(is.complex(X)) {
@@ -3772,7 +4215,7 @@ procrustes2d<-function(x, l1=1, l2=2, approxtangent=FALSE, expomap=FALSE)
 if (expomap==TRUE){
 temp <- rv
 for (i in 1:(n)){
-temp[,i] <- rv[,i]/norm(rv[,i])*rho[i]
+temp[,i] <- rv[,i]/Enorm(rv[,i])*rho[i]
 }
 rv <- temp
 }
@@ -3947,8 +4390,7 @@ approxtangent=TRUE,proc.output=FALSE,reflect=FALSE,expomap=FALSE)
     }
 
 
-    if (pcaoutput==TRUE){
-    if (proc.output){cat("PCA calculation ...\n")}
+
     tanpartial <- matrix(0, k * m - m, n)
     ident <- diag(rep(1, times = (m * k - m)))
     gamma <- as.vector(preshape(zgpa$mshape))
@@ -3960,7 +4402,7 @@ approxtangent=TRUE,proc.output=FALSE,reflect=FALSE,expomap=FALSE)
 if (expomap==TRUE){
 temp <- tanpartial
 for (i in 1:(n)){
-temp[,i] <- tanpartial[,i]/norm(tanpartial[,i])*rho[i]
+temp[,i] <- tanpartial[,i]/Enorm(tanpartial[,i])*rho[i]
 }
 tanpartial<-temp
 }
@@ -3969,13 +4411,14 @@ tanpartial<-temp
     for (i in 2:m) {
         tan <- rbind(tan, zgpa$r.s.r[, i, ] - zgpa$mshape[, i])
     }
+
+    if (pcaoutput==TRUE){
+    if (proc.output){cat("PCA calculation ...\n")}
     if (approxtangent==FALSE){
     pca <- prcomp1(t(tanpartial))
-    z$tan <- tanpartial
     }
     if (approxtangent==TRUE){
     pca<-prcomp1(t(tan))
-    z$tan <- tan
     }
     npc <- 0
     for (i in 1:length(pca$sdev)) {
@@ -3992,6 +4435,15 @@ tanpartial<-temp
     z$pcasd <- pca$sdev
     z$percent <- z$pcasd^2/sum(z$pcasd^2) * 100
     }
+
+
+   if (approxtangent==FALSE){
+    z$tan <- tanpartial
+    }
+    if (approxtangent==TRUE){
+    z$tan <- tan
+    }
+
 
    if (distances == TRUE) {
     z$rho <- rho
@@ -4066,7 +4518,7 @@ percent = 0,
 if (expomap==TRUE){
 temp <- tanpartial
 for (i in 1:(n)){
-temp[,i] <- tanpartial[,i]/norm(tanpartial[,i])*rho[i]
+temp[,i] <- tanpartial[,i]/Enorm(tanpartial[,i])*rho[i]
 }
 tanpartial<-temp
 }
@@ -4356,7 +4808,7 @@ sigma<-function( x )
 {
 #  other radial basis functions/covariance functions are possible of course
 
-	hh <- norm(x)
+	hh <- Enorm(x)
 	if( hh == 0)
 		sig <- 0
 	else
@@ -5800,7 +6252,7 @@ pongom.dat<-aperm(pongom.dat,c(2,1,3))
 
 # msh(a3) compute the mean shape of a3[ , , i]'s
 
-# norm(a) compute || a ||=sqrt{ trace( x'x ) }
+# Enorm(a) compute || a ||=sqrt{ trace( x'x ) }
 
 # rgpa(a3,p) find the new rotated data till dif(old)-dif(new)<p
 
@@ -5838,12 +6290,12 @@ bgpa<-function(a3,proc.output=FALSE)
 	s <- 0
 n<-dim(a3)[3]
 #	for(j in 1:dim(a3)[3]) {
-#		s <- s + (norm(zd[,  , j])^2)
+#		s <- s + (Enorm(zd[,  , j])^2)
 #	}
-	aa<-apply(zd,c(3),norm)^2
+	aa<-apply(zd,c(3),Enorm)^2
 	s<-sum(aa)
 #	for(i in 1:dim(a3)[3]) {
-#		h[i] <- sqrt(s/(norm(zd[,  , i])^2)) * eigen(zz)$vectors[i, 1]
+#		h[i] <- sqrt(s/(Enorm(zd[,  , i])^2)) * eigen(zz)$vectors[i, 1]
 #	}
 
 
@@ -5947,7 +6399,7 @@ dif.old<-function(a3)
         s <- 0
         for(i in 1:(dim(a3)[3] - 1)) {
                 for(j in (i + 1):dim(a3)[3]) {
-                        s <- s + ((norm(a3[,  , i] - a3[,  , j]))^2)
+                        s <- s + ((Enorm(a3[,  , i] - a3[,  , j]))^2)
                 }
         }
         return(s)
@@ -5972,7 +6424,7 @@ dif.old<-function(a3)
 ##faster version
 #{
 #x<-sweep(a3,c(1,2),apply(a3,c(1,2),mean))
-#z<-norm(as.vector(x))^2/dim(a3)[3]
+#z<-Enorm(as.vector(x))^2/dim(a3)[3]
 #z
 #}
 
@@ -5982,7 +6434,7 @@ dif<-function (a3)
 # assumes already centred
     cc<-centroid.size(add(a3)/dim(a3)[3])
     x <- sweep(a3, c(1, 2), apply(a3, c(1, 2), mean))
-    z <- norm(as.vector(x)/cc)^2/dim(a3)[3]
+    z <- Enorm(as.vector(x)/cc)^2/dim(a3)[3]
     z
 }
 
@@ -6184,10 +6636,10 @@ msh<-function(a3)
 }
 
 
-norm<-function(a)
-{
-	return(sqrt(sum(diag(t(a) %*% a))))
-}
+#Enorm<-function(a)
+#{
+#	return(sqrt(sum(diag(t(a) %*% a))))
+#}
 
 
 rgpa<-function(a3, p,reflect=FALSE,proc.output=FALSE)

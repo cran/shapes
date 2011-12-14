@@ -7,7 +7,8 @@ rotation and scaling. Registration without scaling is also an option. Also, obta
 components, and some summary statistics. 
 }
 \usage{
-procWGPA(x, fixcovmatrix=FALSE, initial="Identity", maxiterations=10, scale=TRUE, prior="Exponential",diagonal=TRUE,sampleweights="Equal")
+procWGPA(x, fixcovmatrix=FALSE, initial="Identity", maxiterations=10, scale=TRUE,
+ reflect=FALSE, prior="Exponential",diagonal=TRUE,sampleweights="Equal")
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -23,6 +24,8 @@ raw landmarks. Also, could be a k x k symmetric positive definite matrix.}
 \item{maxiterations}{The maximum number of iterations for estimating 
 the covariance matrix},
   \item{scale}{Logical quantity indicating if scaling is required},
+   \item{reflect}{Logical quantity indicating if reflection invariance is
+   required}, 
 \item{prior}{Indicates the type of prior. "Exponential" is exponential 
 for the inverse eigenvalues. "Identity" is an inverse Wishart with 
 the identity matrix as parameters.}

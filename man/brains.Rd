@@ -16,9 +16,6 @@ brains\$handed : Handedness of each volunteer (r or l)
 brains\$grp : group label: 1= right-handed males, 2=left-handed males, 3=right-handed females, 
 4=left-handed females
 }
-\source{
-
-}
 \references{
 Free, S.L., O'Higgins, P., Maudgil, D.D., Dryden, I.L., Lemieux, L., Fish, D.R. and Shorvon, S.D. (2001). Landmark-based morphometrics of the normal adult brain using MRI.  Neuroimage  ,  13  , 801--813.
 }

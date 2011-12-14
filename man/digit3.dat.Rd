@@ -6,7 +6,7 @@ in 2 dimensions, 30 individuals
 }
 \usage{data(digit3.dat)}
 \format{
-An array of dimension 6 x 2 x 30
+An array of dimension 13 x 2 x 30
 }
 \source{
 Dryden, I.L. and Mardia, K.V. (1998). 

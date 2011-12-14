@@ -1,9 +1,13 @@
 bookstein2d             Bookstein's baseline registration for 2D data
 brains                  Brain landmark data
 digit3.dat              Digit 3 data
+distcov                 Compute a distance between two covariance
+                        matrices
 dna.dat                 DNA data
+estcov                  Weighted Frechet mean of covariance matrices
 gorf.dat                Female gorilla data
 gorm.dat                Male gorilla data
+groupstack              Combine two or more groups of configurations
 macf.dat                Female macaque data
 macm.dat                Male macaque data
 panf.dat                Female chimpanzee data
@@ -25,7 +29,9 @@ rigidbody               Rigid body transformations
 schizophrenia.dat       Bookstein's schizophrenia data
 shapepca                Principal components analysis for shape
 shapes3d                Plot 3D data
+shapes.cva              Canonical variate analysis for shapes
 sooty.dat               Sooty mangabey data
 testmeanshapes          Tests for mean shape difference, including
                         permutation and bootstrap tests
 tpsgrid                 Thin-plate spline transformation grids
+transformations         Calculate similarity transformations

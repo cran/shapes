@@ -6,12 +6,6 @@
 \format{
 An array of dimension 22 x 3 x 30
 }
-\source{
-
-}
-\references{
-
-}
 \examples{
 data(dna.dat)
 plotshapestime3d(dna.dat)
