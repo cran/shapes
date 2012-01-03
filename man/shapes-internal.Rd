@@ -71,6 +71,8 @@
 \alias{dif} 
 \alias{dif.old} 
 \alias{dis}
+\alias{distcov}
+\alias{estcov}
 \alias{fJ}
 \alias{fcel} 
 \alias{fcnt} 

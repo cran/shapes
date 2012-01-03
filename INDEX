@@ -1,10 +1,7 @@
 bookstein2d             Bookstein's baseline registration for 2D data
 brains                  Brain landmark data
 digit3.dat              Digit 3 data
-distcov                 Compute a distance between two covariance
-                        matrices
 dna.dat                 DNA data
-estcov                  Weighted Frechet mean of covariance matrices
 gorf.dat                Female gorilla data
 gorm.dat                Male gorilla data
 groupstack              Combine two or more groups of configurations

@@ -1,7 +1,7 @@
 Package: shapes
 Title: Statistical shape analysis
-Date: 2011-12-14
-Version: 1.1-4
+Date: 2012-01-03
+Version: 1.1-5
 Author: Ian Dryden
 Description: Routines for the statistical analysis
   of shapes. In particular, the package provides routines for
@@ -12,6 +12,6 @@ Maintainer: Ian Dryden <dryden@mailbox.sc.edu>
 Depends: scatterplot3d, rgl, MASS
 License: GPL-2
 URL: http://www.stat.sc.edu/~dryden/shapes
-Packaged: 2011-12-14 17:40:11 UTC; dryden
+Packaged: 2012-01-03 17:37:05 UTC; dryden
 Repository: CRAN
-Date/Publication: 2011-12-15 10:07:54
+Date/Publication: 2012-01-04 06:15:33

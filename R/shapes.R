@@ -4,9 +4,9 @@
 # written by Ian Dryden in R  (see http://cran.r-project.org) 
 # (c) Ian Dryden
 #     University of South Carolina
-#                        2011
+#                        2012
 #
-#          Version 1.1-4  December 14, 2011 
+#          Version 1.1-5  January 3, 2012 
 #
 #----------------------------------------------------------------------
 #
@@ -238,7 +238,7 @@ H<-defh(dim(P1)[1])
 Q1<-t(H)%*%t(chol(P1))
 Q2<-t(H)%*%t(chol(P2))
 ans<- sqrt(centroid.size(Q1)**2 + centroid.size(Q2)**2 - 2*
-   centroid.size(Q1)*centroid.size(Q2)*cos(riemdist(Q1,Q2)))
+   centroid.size(Q1)*centroid.size(Q2)*cos(riemdist(Q1,Q2,reflect=TRUE)))
 ans
 }
 
@@ -246,7 +246,7 @@ distProcrustesFull <- function(P1,P2){
 H<-defh(dim(P1)[1])
 Q1<-t(H)%*%t(chol(P1))
 Q2<-t(H)%*%t(chol(P2))
-ans<- riemdist(Q1,Q2)
+ans<- riemdist(Q1,Q2,reflect=TRUE)
 ans
 }
 
@@ -3267,7 +3267,7 @@ genpower<-function(Be, alpha)
 	}
 	else {
 		l <- k - 3
-		eb <- eigen(Be, symm = TRUE,EISPACK=TRUE)
+		eb <- eigen(Be, symmetric = TRUE,EISPACK=TRUE)
 		ev <- c(eb$values[1:l]^( - alpha/2), 0, 0, 0)
 		gen <- eb$vectors %*% diag(ev) %*% t(eb$vectors)
 		gen
@@ -4134,7 +4134,7 @@ procdistreflect<-function(x, y)
 	z <- preshape(x)
 	w <- preshape(y)
 	Q <- t(z) %*% w %*% t(w) %*% z
-	ev <- sqrt(eigen(Q, symm = TRUE)$values)
+	ev <- sqrt(eigen(Q, symmetric = TRUE)$values)
 #	riem <- acos(sum(ev))
 	riem<-acos(min(sum(ev),1))
 	} 
@@ -4673,8 +4673,8 @@ relwarps<-function(mshape, rotated, alpha)
 	}
 	stacknew <- IBpow %*% cstackxy
 	gamma <- matrix(0, 2 * k, 2 * k)
-	pcarotation <- eigen(stacknew %*% t(stacknew)/n, symm = TRUE)$vectors
-	pcaev <- eigen(stacknew %*% t(stacknew)/n, symm = TRUE)$values
+	pcarotation <- eigen(stacknew %*% t(stacknew)/n, symmetric = TRUE)$vectors
+	pcaev <- eigen(stacknew %*% t(stacknew)/n, symmetric = TRUE)$values
 	pcasdev <- rep(0, times = 2 * k)
 	for(i in 1:(2 * k)) {
 		pcasdev[i] <- sqrt(abs(pcaev[i]))
@@ -4724,7 +4724,7 @@ riem<-c(acos(min(1,(Mod(st(preshape(x)) %*% preshape(y))))))
 		for(i in 1:m) {
 			check <- check * ev[i]
 		}
-		ev <- sqrt(abs(eigen(Q, symm = TRUE)$values))
+		ev <- sqrt(abs(eigen(Q, symmetric = TRUE)$values))
 		if(Re(check) < 0)
 			ev[m] <-  - ev[m]
 		riem <- acos(min(sum(ev),1))
@@ -4737,7 +4737,7 @@ if (reflect==TRUE){
 		w <- preshape(y)
 		Q <- t(z) %*% w %*% t(w) %*% z
 
-		ev <- sqrt(abs(eigen(Q, symm = TRUE)$values))
+		ev <- sqrt(abs(eigen(Q, symmetric = TRUE)$values))
 
 		riem <- acos(min(sum(ev),1))
 }
@@ -4766,7 +4766,7 @@ riemdist.mD<-function(x, y)
 		for(i in 1:m) {
 			check <- check * ev[i]
 		}
-	ev <- sqrt(eigen(Q, symm = TRUE)$values)
+	ev <- sqrt(eigen(Q, symmetric = TRUE)$values)
 	if(check < 0)
 		ev[m] <-  - ev[m]
 	riem <- acos(min(sum(ev),1))
