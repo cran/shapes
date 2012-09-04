@@ -5,6 +5,7 @@
 \alias{distPowerEuclidean}
 \alias{distProcrustesFull}
 \alias{distProcrustesSizeShape}
+\alias{rootmat}
 \alias{distRiemPennec}
 \alias{Enorm}
 \alias{estChol}
@@ -71,8 +72,6 @@
 \alias{dif} 
 \alias{dif.old} 
 \alias{dis}
-\alias{distcov}
-\alias{estcov}
 \alias{fJ}
 \alias{fcel} 
 \alias{fcnt} 

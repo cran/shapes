@@ -3,10 +3,10 @@
 # Statistical shape analysis routines
 # written by Ian Dryden in R  (see http://cran.r-project.org) 
 # (c) Ian Dryden
-#     University of South Carolina
+#     University of Nottingham
 #                        2012
 #
-#          Version 1.1-5  January 3, 2012 
+#          Version 1.1-6   September 4, 2012   
 #
 #----------------------------------------------------------------------
 #
@@ -16,6 +16,7 @@
 #
 #
 ###########################################################################
+
 
 
 ############################################################
@@ -148,7 +149,7 @@ weights <- rep(1,times=M)
 }
 Q<-array(0,c(k+1,k,M))
 for (j in 1:M){
-Q[,,j]<-t(H)%*%t(chol(S[,,j]))
+Q[,,j]<-t(H)%*%(rootmat(S[,,j]))
 }
 ans<-procWGPA(Q,fixcovmatrix=diag(k+1),scale=FALSE,reflect=TRUE,
                      sampleweights=weights)
@@ -165,7 +166,7 @@ weights <- rep(1,times=M)
 }
 Q<-array(0,c(k+1,k,M))
 for (j in 1:M){
-Q[,,j]<-t(H)%*%t(chol(S[,,j]))
+Q[,,j]<-t(H)%*%(rootmat(S[,,j]))
 }
 ans<-procWGPA(Q,fixcovmatrix=diag(k+1),scale=TRUE,reflect=TRUE,
                      sampleweights=weights)
@@ -177,7 +178,7 @@ H%*%ans$mshape%*%t(H%*%ans$mshape)
 estRiemLe <- function(S,weights){
 M<-dim(S)[3]
 k<-dim(S)[1]
-if (M!=2) print("Calculation not possible!")
+if (M!=2) print("Sorry - Calculation not implemented for M>2 yet") 
 if (M == 2){
 P1 <- S[,,1]
 P2<- S[,,2]
@@ -233,22 +234,27 @@ dd <- distRiemPennec( P1%*%t(P1), P2%*%t(P2))/2
 dd
 }
 
-distProcrustesSizeShape<-function(P1,P2){
-H<-defh(dim(P1)[1])
-Q1<-t(H)%*%t(chol(P1))
-Q2<-t(H)%*%t(chol(P2))
-ans<- sqrt(centroid.size(Q1)**2 + centroid.size(Q2)**2 - 2*
-   centroid.size(Q1)*centroid.size(Q2)*cos(riemdist(Q1,Q2,reflect=TRUE)))
-ans
+
+distProcrustesSizeShape<- 
+function (P1, P2) 
+{
+    H <- defh(dim(P1)[1])
+    Q1 <- t(H) %*% rootmat(P1)
+    Q2 <- t(H) %*% rootmat(P2)
+    ans <- sqrt(centroid.size(Q1)^2 + centroid.size(Q2)^2 - 2 * 
+        centroid.size(Q1) * centroid.size(Q2) * cos(riemdist(Q1, 
+        Q2, reflect = TRUE)))
+    ans
 }
 
 distProcrustesFull <- function(P1,P2){
 H<-defh(dim(P1)[1])
-Q1<-t(H)%*%t(chol(P1))
-Q2<-t(H)%*%t(chol(P2))
+Q1<-t(H)%*%rootmat(P1) 
+Q2<-t(H)%*%rootmat(P2) 
 ans<- riemdist(Q1,Q2,reflect=TRUE)
 ans
 }
+
 
 
 distPowerEuclidean<-function(P1,P2,alpha=1/2){
@@ -310,57 +316,79 @@ dd
 }
 
 
-estcov <- function( S , method="Riemannian",weights=1,alpha=1/2){
-out<-list(mean=0,sd=0, pco=0, eig=0)
-M<-dim(S)[3]
-if (length(weights)==1){
-weights <- rep(1,times=M)
+estcov <-
+function (S, method = "Riemannian", weights = 1, alpha = 1/2, MDSk = 2) 
+{
+    out <- list(mean = 0, sd = 0, pco = 0, eig = 0, dist=0)
+    M <- dim(S)[3]
+    if (length(weights) == 1) {
+        weights <- rep(1, times = M)
+    }
+    if (method == "Procrustes") {
+        dd <- estSS(S, weights)
+    }
+    if (method == "ProcrustesShape") {
+        dd <- estShape(S, weights)
+    }
+    if (method == "Riemannian") {
+        dd <- estLogRiem2(S, weights)
+    }
+    if (method == "Cholesky") {
+        dd <- estCholesky(S, weights)
+   }
+    if (method == "Power") {
+        dd <- estPowerEuclid(S, weights, alpha)
+    }
+    if (method == "Euclidean") {
+        dd <- estEuclid(S, weights)
+    }
+    if (method == "LogEuclidean") {
+        dd <- estLogEuclid(S, weights)
+    }
+    if (method == "RiemannianLe") {
+        dd <- estRiemLe(S, weights)
+    }
+    out$mean <- dd
+    sum <- 0
+    for (i in 1:M) {
+        sum <- sum + weights[i] * distcov(S[, , i], dd, method=method)^2/sum(weights)
+    }
+    out$sd <- sqrt(sum)
+    dist <- matrix(0, M, M)
+    for (i in 2:M) {
+        for (j in 1:(i - 1)) {
+            dist[i, j] <- distcov(S[, , i], S[, , j], method = method)
+            dist[j, i] <- dist[i, j]
+        }
+    }
+    out$dist <- dist
+    if (M > MDSk){
+    ans <- cmdscale(dist, k = MDSk, eig = TRUE, add = TRUE, x.ret = TRUE)
+    out$pco <- ans$points
+    out$eig <- ans$eig
+    if (MDSk>2){
+    shapes3d(out$pco[,1:min(MDSk,3)],axes3=TRUE)
+    }
+if (MDSk==2){
+plot(out$pco,type="n",xlab="MDS1",ylab="MDS2")
+text(out$pco[,1],out$pco[,2],1:length(out$pco[,1]))
+}
+}
+    out
 }
 
-if (method=="Procrustes"){
-dd <- estSS(S,weights)
+rootmat<- function( P1 ){
+        eS <- eigen(P1, symmetric = TRUE)
+        if (min(eS$values) < -0.001) {
+print("Not positive-semi definite") 
 }
-if (method=="ProcrustesShape"){
-dd <- estShape(S,weights)
+else{
+        Q1 <- eS$vectors %*% diag(sqrt(abs(eS$values))) %*% t(eS$vectors)
+Q1
 }
-if (method=="Riemannian"){
-dd <- estLogRiem2(S,weights)
 }
-if (method=="Cholesky"){
-dd <- estCholesky(S,weights)
-}
-if (method == "Power"){
-dd <- estPowerEuclid(S,weights,alpha)
-}
-if (method == "Euclidean"){
-dd <- estEuclid(S,weights)
-}
-if (method == "LogEuclidean"){
-dd <- estLogEuclid(S,weights)
-}
-if (method=="RiemannianLe"){
-dd <- estRiemLe(S,weights)
-}
-out$mean <- dd
-sum <- 0 
-for (i in 1:M){
-sum <- sum + weights[i]*distcov(S[,,i],dd)**2/sum(weights)
-}
-out$sd <- sqrt(sum)
 
-dist<-matrix(0,M,M)
-for (i in 2:M){
-for (j in 1:(i-1)){
-dist[i,j] <- distcov( S[,,i],S[,,j] , method=method )
-dist[j,i] <- dist[i,j]
-}
-}
-ans<-cmdscale(dist, k=3, eig = TRUE, add = TRUE, x.ret = TRUE)
-out$pco <- ans$points
-out$eig <- ans$eig
 
-out
-}
 
 ##########################
 
@@ -1096,10 +1124,12 @@ sumx2 <- sumx2 + X2[,i]
     }
     G1 <- G1/n1/Enorm(sumx1/n1)^2
     G2 <- G2/n2/Enorm(sumx2/n2)^2
-    eva1 <- eigen(G1, symmetric = TRUE, EISPACK = TRUE)
+ #   eva1 <- eigen(G1, symmetric = TRUE, EISPACK = TRUE)
+ eva1 <- eigen(G1, symmetric = TRUE)
     pcar1 <- eva1$vectors[, 1:p]
     pcasd1 <- sqrt(abs(eva1$values[1:p]))
-    eva2 <- eigen(G2, symmetric = TRUE, EISPACK = TRUE)
+#    eva2 <- eigen(G2, symmetric = TRUE, EISPACK = TRUE)
+ eva2 <- eigen(G2, symmetric = TRUE)
     pcar2 <- eva2$vectors[, 1:p]
     pcasd2 <- sqrt(abs(eva2$values[1:p]))
     if ((pcasd1[p] < 1e-06) || (pcasd2[p] < 1e-06)) {
@@ -1115,8 +1145,8 @@ sumx2 <- sumx2 + X2[,i]
 
 
     Ahat <- ( Ahat1 +  Ahat2)
-    eva <- eigen(Ahat, symmetric = TRUE, EISPACK = TRUE)
-
+#    eva <- eigen(Ahat, symmetric = TRUE, EISPACK = TRUE)
+eva <- eigen(Ahat, symmetric = TRUE)
 
 
 
@@ -1167,7 +1197,8 @@ Hotelling<-function( pool , n1, n2, p=0){
    if (p == 0){
     p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
 }
-    eva <- eigen(Sw, symmetric = TRUE,EISPACK=TRUE)
+#    eva <- eigen(Sw, symmetric = TRUE,EISPACK=TRUE)
+ eva <- eigen(Sw, symmetric = TRUE)
     pcar <- eva$vectors[, 1:p]
     pcasd <- sqrt(abs(eva$values[1:p]))
     if (pcasd[p] < 1e-06) {
@@ -1218,7 +1249,8 @@ James<-function( pool , n1, n2, p=0, table=FALSE){
    if (p == 0){
     p <- min(k * m - (m * (m - 1))/2 - 1 - m, n1 + n2 - 2)
 }
-    eva <- eigen(Sw, symmetric = TRUE,EISPACK=TRUE)
+#    eva <- eigen(Sw, symmetric = TRUE,EISPACK=TRUE)
+ eva <- eigen(Sw, symmetric = TRUE)
     pcar <- eva$vectors[, 1:p]
     pcasd <- sqrt(abs(eva$values[1:p]))
     if (pcasd[p] < 1e-06) {
@@ -1824,7 +1856,8 @@ function (A, B)
         gamma <- realtocomplex(preshape(poolpr$mshape))
         Sw <- ( S1/n1 + S2/n2)
         p <- 2 * k - 4
-	TT<-eigen(Sw,symmetric=TRUE,EISPACK=TRUE)
+#	TT<-eigen(Sw,symmetric=TRUE,EISPACK=TRUE)
+TT<-eigen(Sw,symmetric=TRUE)
         pcar <- TT$vectors[, 1:p]
         pcasd <- sqrt(abs(TT$values[1:p]))
 ####### add small offset if defecient in rank
@@ -1899,7 +1932,8 @@ lamhat<-rep(0,times=(k-1))
 Sighat<-matrix(0,k-2,k-2)
 kk<-k*2-2
 t1 <- reassqpr(preshape(zst))/nsam
-	t2 <- eigen(t1,symmetric=TRUE,EISPACK=TRUE)
+#	t2 <- eigen(t1,symmetric=TRUE,EISPACK=TRUE)
+t2 <- eigen(t1,symmetric=TRUE)
 reagamma <- (t2$vectors[, 1]+t2$vectors[,2])/sqrt(2)
 	gamma <- Vinv(reagamma)
 muhat<-gamma
@@ -1927,7 +1961,8 @@ S2<-cbind(-(SI),SR)
 S<-rbind(S1,S2)
 
 offset<-0
-es<-eigen(S,symmetric=TRUE,EISPACK=TRUE)$values
+#es<-eigen(S,symmetric=TRUE,EISPACK=TRUE)$values
+es<-eigen(S,symmetric=TRUE)$values
 nn<-length(es)
 if (es[nn] < 0.000001)
 {offset<- 0.000001
@@ -2002,7 +2037,8 @@ LL<-(MGM(zst1)+MGM(zst2))*(nsam1+nsam2)
 LL1<-cbind(Re(LL),Im(LL))
 LL2<-cbind(-Im(LL),Re(LL))
 LL<-rbind(LL1,LL2)
-Tumc<-min(eigen(LL,symmetric=TRUE,only.values=TRUE,EISPACK=TRUE)$values)
+#Tumc<-min(eigen(LL,symmetric=TRUE,only.values=TRUE,EISPACK=TRUE)$values)
+Tumc<-min(eigen(LL,symmetric=TRUE,only.values=TRUE)$values)
 
 
 m1<-preshape(procrustes2d(zst1)$mshape)
@@ -2116,7 +2152,8 @@ LL<-(MGM(zb1)+MGM(zb2))*(nsam1+nsam2)
 LL1<-cbind(Re(LL),Im(LL))
 LL2<-cbind(-Im(LL),Re(LL))
 LL<-rbind(LL1,LL2)
-lmin<-min(eigen(LL,symmetric=TRUE,only.values=TRUE,EISPACK=TRUE)$values)
+#lmin<-min(eigen(LL,symmetric=TRUE,only.values=TRUE,EISPACK=TRUE)$values)
+lmin<-min(eigen(LL,symmetric=TRUE,only.values=TRUE)$values)
 Tu[i]<-lmin
 Gu[i]<-Goodall2D(zbgh1,zbgh2)$F
 Hu[i]<-Hotelling2D(zbgh1,zbgh2)$F
@@ -2517,7 +2554,8 @@ Hotelling2D<-function (A, B)
         gamma <- realtocomplex(preshape(poolpr$mshape))
         Sw <- ((n1 - 1) * S1 + (n2 - 1) * S2)/(n1 + n2 - 2)
         p <- 2 * k - 4
-        pcar <- eigen(Sw,EISPACK=TRUE)$vectors[, 1:p]
+#        pcar <- eigen(Sw,EISPACK=TRUE)$vectors[, 1:p]
+        pcar <- eigen(Sw)$vectors[, 1:p]
         pcasd <- sqrt(abs(eigen(Sw)$values[1:p]))
 ####### add small offset if defecient in rank
 if (pcasd[p] < 0.000001)
@@ -3181,7 +3219,8 @@ bookstein.shpv.complex<-function(z)
 cbevec<-function(z)
 {
 	t1 <- reassqpr(z)
-	t2 <- eigen(t1,symmetric=TRUE,EISPACK=TRUE)
+#	t2 <- eigen(t1,symmetric=TRUE,EISPACK=TRUE)
+t2 <- eigen(t1,symmetric=TRUE)
 	reagamma <- t2$vectors[, 1]
 #	print(t2$values/sum(t2$values))
 
@@ -3191,7 +3230,8 @@ cbevec<-function(z)
 cbevectors<-function(z,j)
 {
 	t1 <- reassqpr(z)
-	t2 <- eigen(t1,symmetric=TRUE,EISPACK=TRUE)
+#	t2 <- eigen(t1,symmetric=TRUE,EISPACK=TRUE)
+	t2 <- eigen(t1,symmetric=TRUE)
 	reagamma <- t2$vectors[, j]
 	gamma <- Vinv(reagamma)
 	gamma
@@ -3267,7 +3307,8 @@ genpower<-function(Be, alpha)
 	}
 	else {
 		l <- k - 3
-		eb <- eigen(Be, symmetric = TRUE,EISPACK=TRUE)
+#		eb <- eigen(Be, symmetric = TRUE,EISPACK=TRUE)
+		eb <- eigen(Be, symmetric = TRUE)
 		ev <- c(eb$values[1:l]^( - alpha/2), 0, 0, 0)
 		gen <- eb$vectors %*% diag(ev) %*% t(eb$vectors)
 		gen
