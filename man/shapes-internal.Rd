@@ -25,8 +25,11 @@
 \alias{nsa}
 \alias{protein}
 \alias{James}
+\alias{select}
 \alias{procWGPA1}
 \alias{rotate}
+\alias{objfun}
+\alias{objfun4}
 \alias{bootstraptest}
 \alias{testmeanshapes.old}
 \alias{permutationtest2}
@@ -59,7 +62,6 @@
 \alias{brainscz.dat}
 \alias{cbevec}
 \alias{cbevectors}
-\alias{centroid.size}
 \alias{centroid.size.complex} 
 \alias{centroid.size.mD} 
 \alias{close1} 

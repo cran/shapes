@@ -28,7 +28,7 @@ if reflection is allowed)}
   \item{Bhat}{The Procrustes registered configuration B}
   \item{OSS}{The ordinary Procrustes sum of squares, which is 
 $\|Ahat-Bhat\|^2$}
-  \item{rmsd}{rmsd = sqrt(OSS/k) where k is the number of landmarks}
+  \item{rmsd}{rmsd = sqrt(OSS/(km))}
 }
 \references{Dryden, I.L. and Mardia, K.V. (1998). Statistical shape 
 analysis. Wiley, Chichester.} 

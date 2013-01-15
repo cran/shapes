@@ -8,8 +8,8 @@ components, and some summary statistics.
 }
 \usage{
 procGPA(x, scale = TRUE, reflect = FALSE, eigen2d = FALSE, 
-tol1 = 1e-05, tol2 = tol1, tangentresiduals = TRUE, proc.output=FALSE, 
-distances=TRUE, pcaoutput=TRUE, alpha=0, affine=FALSE, expomap=FALSE)
+tol1 = 1e-05, tol2 = tol1, tangentcoords = "residual", proc.output=FALSE, 
+distances=TRUE, pcaoutput=TRUE, alpha=0, affine=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -28,11 +28,15 @@ algorithm: tolerance on the mean sum of squares
   \item{tol2}{tolerance for rescale/rotation step for the iterative 
 algorithm: tolerance on the mean sum of squares 
 (divided by size of mean squared) between successive iterations}
-\item{tangentresiduals}{Logical quantity indicating if Procrustes residuals 
-should be used for analysis. If tangentresiduals=TRUE for the shape (scale=TRUE) case these are 
-approximate tangent space coordinates, and for the size-and-shape 
-(scale=FALSE) case these are exact tangent space coordinates. 
-If tangentresiduals=FALSE then the partial tangent shape coordinates (see tan below).}
+\item{tangentcoords}{Type of tangent coordinates. If (SCALE=TRUE) 
+the options are "residual" (Procrustes residuals, which are approximate 
+tangent coordinates to shape space), "partial" (Kent's partial tangent 
+co-ordinates), "expomap" (tangent coordinates from the inverse of the 
+exponential map, which are the similar to "partial" but scaled by 
+(rho/sin(rho)) where rho is the Riemannian distance to the pole of
+the projection. If (SCALE=FALSE) then all three options give the
+same tangent co-ordinates to size-and-shape space, which is simply the 
+Procrustes residual X^P - mu. }
 \item{proc.output}{Logical quantity indicating if printed output during the
 iterations of the Procrustes GPA algorithm should be given} 
 \item{distances}{Logical quantity indicating if shape distances and sizes 
@@ -45,8 +49,6 @@ are emphasized, if alpha = -1 then small scale variations are emphasised.
 Requires m=2 and m=3 dimensional data if alpha $!=$ 0.}
 \item{affine}{Logical. If TRUE then only the affine subspace of shape variability is 
 considered.} 
-\item{expomap}{Logical. If TRUE then the exponential map tangent co-ordinates are used instead
-of the the partial tangent shape co-ordinates}
 }
 \value{A list with components
 \item{k}{no of landmarks}
@@ -54,11 +56,7 @@ of the the partial tangent shape co-ordinates}
 \item{n}{sample size}
 \item{mshape}{Procrustes mean shape. Note this is unit size if complex 
 eigenanalysis used, but on the scale of the data if iterative GPA is used.} 
-\item{tan}{If tangentresiduals=TRUE this is the mk x n matrix of 
-Procrustes residuals $X_i^P$ - Xbar , where Xbar = mean($X_i^P$). 
-If approxtangent=FALSE this is 
-the km-m x n matrix of partial Procrustes tangent shape coordinates
-with pole given by the preshape of the Procrustes mean}
+\item{tan}{The tangent shape (or size-and-shape) coordinates}
 \item{rotated}{the k x m x n array of full Procrustes 
 rotated data} 
 \item{pcar}{the columns are eigenvectors (PCs) of the sample 
@@ -75,6 +73,7 @@ tan}
 \item{rho}{Kendall's Riemannian distance rho to the mean shape}
 \item{rmsrho}{root mean square (r.m.s.) of rho} 
 \item{rmsd1}{r.m.s. of full Procrustes distances to the mean shape $d_F$}
+\item{GSS}{Minimized Procrustes sum of squares}
 }
 \references{Dryden, I.L. and Mardia, K.V. (1998). Statistical 
 Shape Analysis, Wiley, Chichester. 

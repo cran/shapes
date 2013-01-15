@@ -5,15 +5,15 @@
 \usage{data(brains)}
 \format{A list with components: 
 
-brains\$x  :  An array of dimension 24 x 3 x 58  containing the landmarks in 3D
+brains$x  :  An array of dimension 24 x 3 x 58  containing the landmarks in 3D
 
-brains\$sex : Sex of each volunteer (m or f)
+brains$sex : Sex of each volunteer (m or f)
 
-brains\$age : Age of each volunteer
+brains$age : Age of each volunteer
 
-brains\$handed : Handedness of each volunteer (r or l)
+brains$handed : Handedness of each volunteer (r or l)
 
-brains\$grp : group label: 1= right-handed males, 2=left-handed males, 3=right-handed females, 
+brains$grp : group label: 1= right-handed males, 2=left-handed males, 3=right-handed females, 
 4=left-handed females
 }
 \references{

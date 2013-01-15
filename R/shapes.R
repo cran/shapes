@@ -4,9 +4,9 @@
 # written by Ian Dryden in R  (see http://cran.r-project.org) 
 # (c) Ian Dryden
 #     University of Nottingham
-#                        2012
+#                        2013
 #
-#          Version 1.1-6   September 4, 2012   
+#          Version 1.1-7   January 15, 2013   
 #
 #----------------------------------------------------------------------
 #
@@ -847,7 +847,7 @@ mdim <- dim(A1)[2]
     B <- nperms
     nsam1 <- dim(A1)[3]
     nsam2 <- dim(A2)[3]
-    pool<-procGPA( abind (A1, A2) , scale=scale, tangentresiduals = FALSE, pcaoutput=FALSE)
+    pool<-procGPA( abind (A1, A2) , scale=scale, tangentcoords = "partial", pcaoutput=FALSE)
 
     tempool <- pool
 for (i in 1:(nsam1+nsam2)){
@@ -932,7 +932,7 @@ cat("Permutations - sampling without replacement: ")
 }
 
 
-bootstraptest<-function (A, B, resamples = 1000, scale=TRUE)
+bootstraptest<-function (A, B, resamples = 200, scale=TRUE)
 {
     A1 <- A
     A2 <- B
@@ -940,7 +940,7 @@ mdim <- dim(A1)[2]
     B <- resamples
     nsam1 <- dim(A1)[3]
     nsam2 <- dim(A2)[3]
-    pool<-procGPA( abind (A1, A2) ,scale=scale , tangentresiduals=FALSE, pcaoutput=FALSE)
+    pool<-procGPA( abind (A1, A2) ,scale=scale , tangentcoords="partial", pcaoutput=FALSE)
     tempool <- pool
 for (i in 1:(nsam1+nsam2)){
 tempool$tan[,i] <- pool$tan[,i]/Enorm(pool$tan[,i])*pool$rho[i]
@@ -1629,7 +1629,7 @@ function (x, type = "p", rgl = TRUE, color = 2, size = 1, joinline = c(1:1))
 if (type=="l"){
         points3d(y, col = color, size = size)
             for (j in 1:n) {
-                lines3d(x[, , j],col= color)
+                lines3d(x[, , j],col= 8)
             }
 }
 if (type=="dots"){
@@ -1640,7 +1640,7 @@ if (type=="dots"){
 }
         if (length(joinline) > 1) {
             for (j in 1:n) {
-                lines3d(x[joinline, , j],col= color)
+                lines3d(x[joinline, , j],col= 8)
             }
         }
 
@@ -2311,8 +2311,9 @@ out$R<-R
 out$s<-s
 out$Ahat<-Ahat
 out$Bhat<-Bhat
+m<-dim(Ahat)[2]
 out$OSS<-OSS
-out$rmsd <- sqrt(OSS/k)
+out$rmsd <- sqrt(OSS/(k*m))
 out
 }
 defplotsize2<-function(Y,project=c(1,2))
@@ -2357,9 +2358,9 @@ m<-dim(A)[2]
 kk<-k
 if (k >= 15){kk<-1}
 par(pty="s")
-if (length(c(B))==1){
-par(mfrow=c(1,1))
-}
+#if (length(c(B))==1){
+#par(mfrow=c(1,1))
+#}
 if (length(c(B))!=1){
 par(mfrow=c(1,2))
 }
@@ -3169,15 +3170,15 @@ bookmean<-bookmean/n
 bookmean[reorder,] <- bookmean
 bshpv[reorder, , ] <- bshpv
 glim <- max( - min(bshpv), max(bshpv))
-par(pty="s")
-par(mfrow=c(1,1))
-plot(bshpv[,,1],xlim=c(-glim,glim),ylim=c(-glim,glim),type="n",xlab="u",ylab="v")
-for (i in 1:n)
-{
-for (j in 1:k){
-text(bshpv[j,1,i],bshpv[j,2,i],as.character(j))
-}
-}
+#par(pty="s")
+#par(mfrow=c(1,1))
+#plot(bshpv[,,1],xlim=c(-glim,glim),ylim=c(-glim,glim),type="n",xlab="u",ylab="v")
+#for (i in 1:n)
+#{
+#for (j in 1:k){
+#text(bshpv[j,1,i],bshpv[j,2,i],as.character(j))
+#}
+#}
 z$mshape<-bookmean
 z$bshpv<-bshpv
 z$k<-k
@@ -3238,9 +3239,32 @@ cbevectors<-function(z,j)
 }
 centroid.size<-function(x)
 {
-#returns the centroid size of a configuration
+#returns the centroid size of a configuration (or configurations)
 #input: k x m matrix/or a complex k-vector
-	if(is.complex(x)) {
+# or input a real k x m x n array to get a vector of sizes for a sample
+        if ((is.vector(x)==FALSE)&&is.complex(x)){
+k <- nrow(x)
+n<-ncol(x)
+tem<-array(0,c(k,2,n))
+tem[,1,]<-Re(x)
+tem[,2,]<-Im(x)
+x<-tem
+        }
+{
+        if(length(dim(x))==3){
+        n<-dim(x)[3]
+        sz<-rep(0,times=n)
+	k <- dim(x)[1]
+	h <- defh(k - 1)
+        for (i in 1:n){
+  	xh <- h %*% x[,,i]
+	sz[i] <- sqrt(sum(diag(t(xh) %*% xh)))      
+        }
+        sz
+        }
+        else
+        {
+	if(is.vector(x)&&is.complex(x)) {
 		x <- cbind(Re(x), Im(x))
 	}
 	k <- nrow(x)
@@ -3248,6 +3272,8 @@ centroid.size<-function(x)
 	xh <- h %*% x
 	size <- sqrt(sum(diag(t(xh) %*% xh)))
 	size
+        }
+}        
 }
 centroid.size.complex<-function(zstar)
 {
@@ -3376,8 +3402,8 @@ linegrid<-function(ref, kx, ky)
 }
 mahpreshapedist<-function(z, m, pcar, pcasdev)
 {
-if (is.real(z)==TRUE) z<-realtocomplex(z)
-if (is.real(m)==TRUE) m<-realtocomplex(m)
+if (is.double(z)==TRUE) z<-realtocomplex(z)
+if (is.double(m)==TRUE) m<-realtocomplex(m)
 	w <- preshape(z)
 	y <- preshape(m)
 	zp <- project(w, y)
@@ -4329,14 +4355,51 @@ test
 
 
 procGPA<-function(x,scale=TRUE,reflect=FALSE,eigen2d=FALSE,
-tol1=1e-05,tol2=tol1,tangentresiduals=TRUE,proc.output=FALSE,distances=TRUE,pcaoutput=TRUE,
-alpha = 0, affine = FALSE,expomap=FALSE)
+tol1=1e-05,tol2=tol1,tangentcoords="residual",proc.output=FALSE,distances=TRUE,pcaoutput=TRUE,
+alpha = 0, affine = FALSE)
 {
 #
 #
-# `tangentresiduals' indicates if Procrustes residuals should be used for analysis
-#   for the shape (scale=TRUE) case these are approximate tangent space coordinates
-#   for the size-and-shape (scale=FALSE) case these are exact tangent space coordinates
+n<-dim(x)[3]
+if ((n>100)&(distances==TRUE)){
+print("To speed up use option distances=FALSE")
+}
+if ((n>100)&(pcaoutput==TRUE)){
+print("To speed up use option pcaoutput=FALSE")
+}
+
+
+
+if (scale==TRUE){
+if (tangentcoords=="residual"){
+tangentresiduals<-TRUE
+expomap<-FALSE
+}
+if (tangentcoords=="partial"){
+tangentresiduals<-FALSE
+expomap<-FALSE
+}
+if (tangentcoords=="expomap"){
+tangentresiduals<-FALSE
+expomap<-TRUE
+}
+}
+if (scale==FALSE){
+#all three options are equivalent
+if (tangentcoords=="residual"){
+tangentresiduals<-TRUE
+expomap<-FALSE
+}
+if (tangentcoords=="partial"){
+tangentresiduals<-TRUE
+expomap<-FALSE
+}
+if (tangentcoords=="expomap"){
+tangentresiduals<-TRUE
+expomap<-FALSE
+}
+}
+
 approxtangent<-tangentresiduals
 	if(is.complex(x)) {
 		tem <- array(0, c(nrow(x), 2, ncol(x)))
@@ -4390,7 +4453,7 @@ out$rotated[,,i]<- out$rotated[,,i]/centroid.size(out$rotated[,,i])
 
 rw<-out
 rw <- shaperw(out, alpha=alpha , affine=affine )
-
+rw$GSS <- sum((n-1)*rw$pcasd**2)
 rw
 }
 
@@ -4738,6 +4801,14 @@ relwarps<-function(mshape, rotated, alpha)
 	z$rwpercent <- percentrw
 	return(z)
 }
+
+ssriemdist<-function(x,y,reflect=FALSE){
+sx <- centroid.size(x)
+sy <- centroid.size(y)
+sd <- sx**2+sy**2-2*sx*sy*cos(riemdist(x,y,reflect=reflect))
+sqrt(sd)
+}
+
 riemdist<-function(x, y, reflect=FALSE)
 {
 #input two k x m matrices x, y or complex k-vectors
@@ -6155,6 +6226,8 @@ panf.dat<-array(c(47,-23,0,0,0,32,12,87,21,156,31,133,66,92,83,20,
 46,-25,0,0,0,29,15,88,23,163,37,134,70,91,85,22,
 43,-22,0,0,0,33,-1,96,10,178,24,153,66,105,87,32),c(2,8,26))
 panf.dat<-aperm(panf.dat,c(2,1,3))
+select<-c(5,1,2,3,4,6,7,8)
+panf.dat<-panf.dat[select,,]
 
 panm.dat<-array(c(43,-21,0,0,0,34,14,101,25,179,40,150,75,104,90,31,
 48,-23,0,0,0,31,5,92,11,166,24,144,63,99,82,24,
@@ -6185,6 +6258,9 @@ panm.dat<-array(c(43,-21,0,0,0,34,14,101,25,179,40,150,75,104,90,31,
 44,-20,0,0,0,29,1,87,0,154,19,133,64,98,80,16,
 52,-28,0,0,0,28,2,84,18,155,25,135,63,97,93,21),c(2,8,28))
 panm.dat<-aperm(panm.dat,c(2,1,3))
+select<-c(5,1,2,3,4,6,7,8)
+panm.dat<-panm.dat[select,,]
+
 
 pongof.dat<-array(c(43,-31,0,0,0,29,13,90,45,150,48,126,74,80,91,19,
 49,-31,0,0,0,33,28,93,70,152,72,130,86,78,85,-5,
@@ -6211,6 +6287,9 @@ pongof.dat<-array(c(43,-31,0,0,0,29,13,90,45,150,48,126,74,80,91,19,
 38,-27,0,0,0,30,4,93,30,160,36,136,60,92,86,27,
 38,-27,0,0,0,34,14,92,53,155,48,129,71,82,84,24),c(2,8,24))
 pongof.dat<-aperm(pongof.dat,c(2,1,3))
+select<-c(5,1,2,3,4,6,7,8)
+pongof.dat<-pongof.dat[select,,]
+
 
 pongom.dat<-array(c(49,-45,0,0,0,26,25,106,68,190,68,151,84,80,100,14,
 64,-28,0,0,0,31,10,106,46,185,53,156,77,95,99,14,
@@ -6243,6 +6322,9 @@ pongom.dat<-array(c(49,-45,0,0,0,26,25,106,68,190,68,151,84,80,100,14,
 41,-24,0,0,0,39,4,128,42,209,47,178,73,102,93,21,
 50,-32,0,0,0,39,27,121,73,198,75,166,95,89,101,15),c(2,8,30))
 pongom.dat<-aperm(pongom.dat,c(2,1,3))
+select<-c(5,1,2,3,4,6,7,8)
+pongom.dat<-pongom.dat[select,,]
+
 
 
 #The Procrustes routines in the next part were initially
@@ -7356,7 +7438,7 @@ schizophrenia.dat<-array(schizophrenia.dat,c(2,13,28))
 schizophrenia.dat<-aperm(schizophrenia.dat,c(2,1,3))
 
 
-permutationtest<-function(A,B,nperms=100){
+permutationtest<-function(A,B,nperms=200){
 
 A1<-A
 A2<-B
@@ -7437,3 +7519,103 @@ out
 }
 
 permutationtest <- permutationtest2
+
+
+frechet<-function(x,mean="intrinsic"){
+if (mean=="intrinsic"){
+option <- 1
+}
+if (mean=="partial.procrustes"){
+option <- 2
+}
+if (mean=="full.procrustes"){
+option <- 3
+}
+if (mean=="mle"){
+option <- 4
+}
+if (is.double(mean)){
+if (mean>0){
+option <- -mean
+}
+}
+n<-dim(x)[3]
+for (i in 1:n){
+x[,,i]<-x[,,i]/centroid.size(x[,,i])
+}
+if (option < 4){
+pm<-procGPA(x,scale=FALSE,tol1=10^(-8))$mshape
+m<-dim(x)[2]
+k<-dim(x)[1]
+ans<-list(mshape=0,var=0,code=0,gradient=0)
+out <- nlm(objfun, hessian=TRUE, c(pm), uu=x,option=option,iterlim=1000)
+B<-matrix(out$estimate,k,m)
+ans$mshape<-procOPA(pm,B)$Bhat
+ans$var<-out$minimum
+ans$code<-out$code
+ans$gradient<-out$gradient
+}
+if (option==4){
+pm<-procGPA(x,scale=FALSE,tol1=10^(-8))$mshape
+m<-dim(x)[2]
+k<-dim(x)[1]
+if (m==2){
+theta<-c(log(centroid.size(pm)**2/(4*0.1**2)),pm)
+ans<-list(mshape=0,kappa=0,code=0,gradient=0)
+out <- nlm(objfun4, hessian=TRUE, theta, uu=x,iterlim=1000)
+B<-matrix(out$estimate[-1],k,m)
+ans$mshape<-procOPA(pm,B)$Bhat
+ans$kappa<-exp(out$estimate[1])
+ans$loglike <- -out$minimum
+ans$code<-out$code
+ans$gradient<-out$gradient
+}
+if (m!=2){
+print("MLE is only appropriate for planar shapes")
+}
+}
+ans
+}
+
+
+
+
+objfun<-function(pm,uu,option){
+m<-dim(uu)[2]
+k<-dim(uu)[1]
+pm<-matrix(pm,k,m)
+sum<-0
+for (i in 1:dim(uu)[3]){
+
+if (option==1){
+sum<-sum+(riemdist(pm,uu[,,i]))**2
+}
+if (option==2){
+sum<-sum+4*sin(riemdist(pm,uu[,,i])/2)**2
+}
+if (option==3){
+sum<-sum+sin(riemdist(pm,uu[,,i]))**2
+}
+if (option<0){
+h <- -option
+sum<-sum+  ((1 - cos(riemdist(pm,uu[,,i]))**(2*h) )/h)
+}
+}
+sum
+}
+
+
+objfun4<-function(pm,uu){
+m<-dim(uu)[2]
+k<-dim(uu)[1]
+n<-dim(uu)[3]
+kappa<-exp(pm[1])
+pm<-matrix(pm[-1],k,m)
+sum<-0
+for (i in 1:n){
+sin2rho<- sin(riemdist(pm,uu[,,i]))**2
+sum<-sum+loneFone(k-2,2*kappa*(1-sin2rho))-2*kappa*sin2rho
+}
+-sum
+}
+
