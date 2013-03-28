@@ -6,7 +6,7 @@
 #     University of Nottingham
 #                        2013
 #
-#          Version 1.1-7   January 15, 2013   
+#          Version 1.1-8   March 28, 2013   
 #
 #----------------------------------------------------------------------
 #
@@ -791,7 +791,7 @@ out
 }
 
 
-testmeanshapes <- function( A, B, resamples = 1000, replace=TRUE, scale=TRUE){
+testmeanshapes <- function( A, B, resamples = 1000, replace=FALSE, scale=TRUE){
 if (replace==TRUE){
 out<-bootstraptest(A,B,resamples=resamples, scale=scale)
 }
@@ -1443,7 +1443,11 @@ if (m == 2){
         ky)/kx), xlab = " ", ylab = " ")
     lines(order[(l + 1):(2 * l), 1], order[(l + 1):(2 * l), 2],
         type = "l")
-    points(YY, cex = cex,pch=pch,col=col)
+    points(YY, cex = cex,pch=pch,col=col+1)
+    points(TT, cex=cex,pch=pch,col=col)
+    for (i in 1:(k)){
+    arrows( TT[i,1],TT[i,2] , YY[i,1],YY[i,2] ,col=col+2,length=0.1,angle=20)
+    }
 }
 
 
@@ -4495,8 +4499,8 @@ approxtangent=TRUE,proc.output=FALSE,reflect=FALSE,expomap=FALSE)
 
 
 
-    tanpartial <- matrix(0, k * m - m, n)
-    ident <- diag(rep(1, times = (m * k - m)))
+    tanpartial <- matrix(0, k * m-m , n)
+    ident <- diag(rep(1, times = (m * k-m )))
     gamma <- as.vector(preshape(zgpa$mshape))
     for (i in 1:n) {
         tanpartial[, i] <- (ident - gamma %*% t(gamma)) %*% 
@@ -4596,7 +4600,6 @@ percent = 0,
 #    print("GPA (rotation only)")
     x<-cnt3(x)
     zgpa <- fgpa.rot(x, tol1, tol2,proc.output=proc.output,reflect=reflect)
-    tanpartial <- matrix(0, k * m - m, n)
 
     if (distances == TRUE) {
        if (proc.output){cat("Shape distances and sizes calculation ...\n")}
@@ -4610,9 +4613,8 @@ percent = 0,
 
 
     
-  if (pcaoutput==TRUE){
-      if (proc.output){cat("PCA calculation ...\n")}
-    ident <- diag(rep(1, times = (m * k - m)))
+    tanpartial <- matrix(0, k * m-m, n)
+    ident <- diag(rep(1, times = (m * k-m)))
     gamma <- as.vector(preshape(zgpa$mshape))
     for (i in 1:n) {
         tanpartial[, i] <- (ident - gamma %*% t(gamma)) %*% 
@@ -4642,6 +4644,10 @@ tanpartial<-temp
     pca<-prcomp1(t(tan))
     z$tan <- tan
     }
+
+
+  if (pcaoutput==TRUE){
+      if (proc.output){cat("PCA calculation ...\n")}
     npc <- 0
     for (i in 1:length(pca$sdev)) {
         if (pca$sdev[i] > 1e-07) {

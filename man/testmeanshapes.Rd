@@ -23,7 +23,7 @@ Sw + 0.000001 (Identity matrix) and a `*' is printed in the output.
 
 }
 \usage{
-testmeanshapes(A, B, resamples = 1000, replace = TRUE, scale= TRUE)
+testmeanshapes(A, B, resamples = 1000, replace = FALSE, scale= TRUE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -81,7 +81,6 @@ Series B, 53: 285-339.
 data(gorf.dat)
 data(gorm.dat)
 
-#just select 3 landmarks and the first 10 observations in each group
 A<-gorf.dat
 B<-gorm.dat
 testmeanshapes(A,B,resamples=100)
