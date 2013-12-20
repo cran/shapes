@@ -6,8 +6,8 @@
 to another. 
 }
 \usage{
-tpsgrid(TT, YY, xbegin=-999, ybegin=-999, xwidth=-999, opt=1, ext=0.1, ngrid=22, cex=1, pch=20, col=2,zslice=0,
-mag=1, axes3=FALSE)
+tpsgrid(TT, YY, xbegin=-999, ybegin=-999, xwidth=-999, opt=1, ext=0.1, ngrid=22, 
+                  cex=1, pch=20, col=2,zslice=0, mag=1, axes3=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -23,20 +23,20 @@ mag=1, axes3=FALSE)
   \item{cex}{Point size}
   \item{pch}{Point symbol}
   \item{col}{Point colour}
-  \item{zslice}{For 3D case the scaled z co-ordinate(s) for the grid slice(s). 
-The values are on a standardized scale as a proportion of height from the
-middle of the z-axis to the top and bottom. Values in the range -1 to 1 would be sensible.}
+  \item{zslice}{For 3D case the scaled z co-ordinate(s) for the grid slice(s). The 
+values are on a standardized scale as a proportion of height from the middle of 
+the z-axis to the top and bottom. Values in the range -1 to 1 would be sensible.}
   \item{mag}{Exaggerate effect (mag > 1). Standard effect has mag=1.}
   \item{axes3}{Logical. If TRUE then the axes are plotted in a 3D plot.}
 }
 \details{
 A square grid on the first configuration is deformed smoothly using a pair of 
-thin-plate splines in 2D, or a triple of splines in 3D, to a curved grid on the second object.
-For 3D data the grid is placed at a constant z-value on the first figuure, indicated by the 
-value of zslice. 
+thin-plate splines in 2D, or a triple of splines in 3D, to a curved grid on 
+the second object. For 3D data the grid is placed at a constant z-value on the 
+first figuure, indicated by the value of zslice. 
 
-For 2D data the covariance function in the thin-plate spline is $sigma(h) = |h|^2 log |h|^2$ and 
-in 3D it is given by $sigma(h) =  -| h |$. 
+For 2D data the covariance function in the thin-plate spline is 
+$sigma(h) = |h|^2 log |h|^2$ and in 3D it is given by $sigma(h) =  -| h |$. 
 }
 \value{
 No returned value

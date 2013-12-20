@@ -6,7 +6,8 @@
 Provides graphical summaries of principal components for shape.
 }
 \usage{
-shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1), project=c(1,2),scores3d=FALSE,color=2,axes3=FALSE,rglopen=TRUE,zslice=0)
+shapepca(proc, pcno = c(1, 2, 3), type = "r", mag = 1, joinline = c(1, 1), 
+           project=c(1,2),scores3d=FALSE,color=2,axes3=FALSE,rglopen=TRUE,zslice=0)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -31,7 +32,7 @@ of the default plot of the mean and PC vectors.}
   \item{color}{Color of the spheres used in plotting. Default color = 2 (red). 
 If a vector is given then the points are colored in that order.}
   \item{axes3}{Logical. If TRUE then the axes are plotted in a 3D plot.}
-  \item{rglopen}{Logical. If TRUE then open a new RGL window, if FALSE then plot in current window.}
+  \item{rglopen}{Logical. If TRUE open a new RGL window, otherwise plot in current window.}
   \item{zslice}{For 3D case, type = "g": the z co-ordinate(s) for the grid slice(s)}
 }
 \details{The mean and PCs are plotted. 

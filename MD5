@@ -1,7 +1,7 @@
-efa80a6173d53df2f9124fc406e4f77d *DESCRIPTION
+5862ac9f0bac45e6f9e8e6e4934e6d8d *DESCRIPTION
 16725c94a16ed06e31664ec89fef2891 *INSTALL
 421b2ee89c095d0501747b168b365c58 *NAMESPACE
-c36345059b54f1428910f3062671596c *R/shapes.R
+8c0172ae045cfdf43307cd4eee6920e8 *R/shapes.R
 738bdec88e54e1b0e2b2b09258fa49c1 *data/apes.rda
 7ee06aab8836a98facdb20c3c2259fdb *data/brains.rda
 6b6da1a4f8a06eac810c6a8f20b30644 *data/digit3.dat.rda
@@ -61,13 +61,13 @@ cc8c84aed95bb1f2ca446ddc99fbaf7b *man/resampletest.Rd
 36f7c49ad5f162187046f9101041b64e *man/sand.Rd
 c0c2ec3509ba14a0d765eb0a73172bf1 *man/schizophrenia.Rd
 ed8fda94455439858da784dc70b9385e *man/schizophrenia.dat.Rd
-3b525cd1ce1cf48eaf235aaf8ef8b684 *man/shapepca.Rd
-ec256d060b3df3ee8509902933dcb8b3 *man/shapes-internal.Rd
+d2f47b4bb3a61161aa8579d84f22c941 *man/shapepca.Rd
+4473d853155cf0e95b49855ac691ab92 *man/shapes-internal.Rd
 1169969392d78131ab0868b3917e2a21 *man/shapes.cva.Rd
 b165fd3215b86d01e5243d8fa7a5cdd9 *man/shapes3d.Rd
 72af567810368385d50bcd70a28e2f51 *man/sooty.dat.Rd
 ac05e13e0deed30bcb8645b52518bfce *man/ssriemdist.Rd
 56f0de6b0747cebfe637d52107077290 *man/steroids.Rd
 5e25e9b2be29e34b733b1c7f81907d14 *man/testmeanshapes.Rd
-9949c4ba6179348be616175235d33437 *man/tpsgrid.Rd
+fce157fc2c0f09d11a987184694b23f5 *man/tpsgrid.Rd
 3232d7581a003873a568989b61b1b117 *man/transformations.Rd

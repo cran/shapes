@@ -6,7 +6,7 @@
 #     University of Nottingham
 #                        2013
 #
-#          Version 1.1-8   March 28, 2013   
+#          Version 1.1-9   Date December 20, 2013   
 #
 #----------------------------------------------------------------------
 #
@@ -260,9 +260,9 @@ ans
 distPowerEuclidean<-function(P1,P2,alpha=1/2){
 if (alpha != 0){
 eS<-eigen(P1,symmetric=TRUE)
-Q1<- eS$vectors%*%diag((eS$values)^alpha)%*%t(eS$vectors)
+Q1<- eS$vectors%*%diag(abs(eS$values)^alpha)%*%t(eS$vectors)
 eS<-eigen(P2,symmetric=TRUE)
-Q2<- eS$vectors%*%diag((eS$values)^alpha)%*%t(eS$vectors)
+Q2<- eS$vectors%*%diag(abs(eS$values)^alpha)%*%t(eS$vectors)
 dd <- Enorm( Q1 - Q2 )/abs(alpha)
 }
 if (alpha == 0){
@@ -904,6 +904,10 @@ cat("Permutations - sampling without replacement: ")
         numbig <- length(Hu[Humc < Hu])
         pvalH <- (1 + numbig)/(B + 1)
         cat(" \n")
+        out$Hu <- Hu
+        out$Ju <- Ju
+        out$Gu <- Gu
+        out$Lu <- Lu
         out$H <- Humc
         out$H.pvalue <- pvalH
         out$H.table.pvalue <- Htabpval
@@ -1001,6 +1005,10 @@ pool2$tan[,(nsam1+1):(nsam1+nsam2)] <- pool$tan[,(nsam1+1):(nsam1+nsam2)] -
         numbig <- length(Lu[Lumc < Lu])
         pvalL <- (1 + numbig)/(B + 1)
        cat(" \n")
+       out$Hu <- Hu
+        out$Ju <- Ju
+        out$Gu <- Gu
+        out$Lu <- Lu
         out$H <- Humc
         out$H.pvalue <- pvalH
         out$H.table.pvalue <- Htabpval
@@ -1456,7 +1464,7 @@ if (m == 2){
 
 
 
-rotate<-function(x,thetax,thetay,thetaz){
+rotatexyz<-function(x,thetax,thetay,thetaz){
 thetax<-thetax/180*pi
 thetay<-thetay/180*pi
 thetaz<-thetaz/180*pi
@@ -1483,12 +1491,13 @@ m<-dim(X)[2]
 n<-dim(X)[3]
 Y<-X
 if (m == 2){
-xx<-as.3d(X)
+#xx<-as.3d(X)
+if(dim(X)[3]<2){xx <- array(as.3d(X),dim=c(nrow(X),3,1))}else{xx <- as.3d(X)}
 for (i in 1:n){
 for (j in 1:m){
 xx[j,,i]<-xx[j,,i]-c(transx,transy,transz)
 } }
-yy<-rotate(xx,thetax,thetay,thetaz)
+yy<-rotatexyz(xx,thetax,thetay,thetaz)
 Y<-yy
 if ( (sum(abs(yy[,3,])))< 0.000000001){
 Y<-yy[,1:2,]
@@ -1499,7 +1508,7 @@ for (i in 1:n){
 for (j in 1:m){
 X[j,,i]<-X[j,,i]-c(transx,transy,transz)
 } }
-Y<-rotate(X,thetax,thetay,thetaz)
+Y<-rotatexyz(X,thetax,thetay,thetaz)
 }
 Y
 }
@@ -4364,7 +4373,7 @@ alpha = 0, affine = FALSE)
 {
 #
 #
-n<-dim(x)[3]
+n<-dim(x)[length(dim(x))]
 if ((n>100)&(distances==TRUE)){
 print("To speed up use option distances=FALSE")
 }

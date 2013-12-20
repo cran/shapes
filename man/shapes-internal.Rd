@@ -27,7 +27,7 @@
 \alias{James}
 \alias{select}
 \alias{procWGPA1}
-\alias{rotate}
+\alias{rotatexyz}
 \alias{objfun}
 \alias{objfun4}
 \alias{bootstraptest}
