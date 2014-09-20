@@ -4,9 +4,9 @@
 # written by Ian Dryden in R  (see http://cran.r-project.org) 
 # (c) Ian Dryden
 #     University of Nottingham
-#                        2013
+#                        2014
 #
-#          Version 1.1-9   Date December 20, 2013   
+#          Version 1.1-10   Date September 20, 2014
 #
 #----------------------------------------------------------------------
 #
@@ -470,7 +470,7 @@ translation<-matrix(0,m,n)
 scale<-rep(0,times=n)
 rotation<-array(0,c(m,m,n))
 for (i in 1:n){
-translation[,i]<- -apply(X2[,,i],2,mean)
+translation[,i]<- -apply(X2[,,i]-X1[,,i],2,mean)
 ans<-procOPA(X1[,,i],X2[,,i])
 scale[i]<-ans$s
 rotation[,,i]<-ans$R
@@ -2229,12 +2229,22 @@ out
 }
 
 
-prcomp1<-function (x, retx = TRUE, center = TRUE, scale. = FALSE, tol = NULL) 
+
+prcomp1<-function (x, retx = TRUE, center = TRUE, scale. = FALSE, tol = NULL, svd=TRUE) 
 {
     x <- as.matrix(x)
     x <- scale(x, center = center, scale = scale.)
-    s <- svd(x, nu = 0, LINPACK=FALSE)
-    if (!is.null(tol)) {
+if (svd==FALSE){
+a<-eigen(cov(x))
+r<-list(sdev=0,rotation=0,x=0)
+r$sdev<-sqrt(abs(a$values))
+r$rotation<-a$vectors
+r$x<-x%*%a$vectors
+}
+else
+{
+    s <- svd(x,nu=0)
+  if (!is.null(tol)) {
         rank <- sum(s$d > (s$d[1] * tol))
         if (rank < ncol(x)) 
             s$v <- s$v[, 1:rank, drop = FALSE]
@@ -2246,8 +2256,12 @@ prcomp1<-function (x, retx = TRUE, center = TRUE, scale. = FALSE, tol = NULL)
     if (retx) 
         r$x <- x %*% s$v
     class(r) <- "prcomp1"
+}
     r
 }
+
+
+
 
 # if using Splus
 # prcomp1<-prcomp
@@ -2326,7 +2340,7 @@ out$Ahat<-Ahat
 out$Bhat<-Bhat
 m<-dim(Ahat)[2]
 out$OSS<-OSS
-out$rmsd <- sqrt(OSS/(k*m))
+out$rmsd <- sqrt(OSS/(k))
 out
 }
 defplotsize2<-function(Y,project=c(1,2))
@@ -4646,17 +4660,25 @@ tanpartial<-temp
     }
 
         if (approxtangent==FALSE){
-    pca <- prcomp1(t(tanpartial))
     z$tan <- tanpartial
     }
     if (approxtangent==TRUE){
-    pca<-prcomp1(t(tan))
     z$tan <- tan
     }
 
 
   if (pcaoutput==TRUE){
       if (proc.output){cat("PCA calculation ...\n")}
+
+        if (approxtangent==FALSE){
+    pca <- prcomp1(t(tanpartial))
+    }
+    if (approxtangent==TRUE){
+    pca<-prcomp1(t(tan))
+    }
+
+
+
     npc <- 0
     for (i in 1:length(pca$sdev)) {
         if (pca$sdev[i] > 1e-07) {
@@ -4821,7 +4843,7 @@ ssriemdist<-function(x,y,reflect=FALSE){
 sx <- centroid.size(x)
 sy <- centroid.size(y)
 sd <- sx**2+sy**2-2*sx*sy*cos(riemdist(x,y,reflect=reflect))
-sqrt(sd)
+sqrt(abs(sd))
 }
 
 riemdist<-function(x, y, reflect=FALSE)

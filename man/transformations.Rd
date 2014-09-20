@@ -19,9 +19,9 @@ where k is the number of points, m
 is the number of dimensions, and n is the sample size. }
 }
 \value{A list with components
-\item{translation}{The translation parameters}
+\item{translation}{The translation parameters. These are the relative translations of the centroids of the individuals.}
 \item{scale}{The scale parameters}                             
-\item{rotation}{The rotation parameters} 
+\item{rotation}{The rotation parameters. These are the rotations between the individuals after they have both been centred.} 
 }
 \references{Dryden, I.L. and Mardia, K.V. (1998). Statistical
 Shape Analysis, Wiley, Chichester.}
