@@ -4,9 +4,9 @@
 # written by Ian Dryden in R  (see http://cran.r-project.org) 
 # (c) Ian Dryden
 #     University of Nottingham
-#                        2014
+#                        2015
 #
-#          Version 1.1-10   Date September 20, 2014
+#          Version 1.1-11   Date: August 18, 2015
 #
 #----------------------------------------------------------------------
 #
@@ -7655,4 +7655,51 @@ sum<-sum+loneFone(k-2,2*kappa*(1-sin2rho))-2*kappa*sin2rho
 }
 -sum
 }
+
+MDSshape<-function(x,alpha=1,projalpha=1/2){
+mu<-procGPA(x)$mshape
+k<-dim(x)[1]
+n<-dim(x)[3]
+m<-dim(x)[2]
+H<-defh(k-1)
+sum<-matrix(0,k-1,k-1)
+for (i in 1:n){
+Z<-preshape(x[,,i])
+if (alpha==1){
+sum<-sum+(Z)%*%t((Z))
+}
+if (alpha==1/2){
+ee<-eigen((Z)%*%t((Z)),symmetric=TRUE)
+sum<-sum+ee$vectors%*%diag(sqrt(abs(ee$values)))%*%t(ee$vectors)
+}
+}
+eig<-eigen(sum/n,symmetric=TRUE)
+lam<-eig$values
+
+if (m == 2){
+if (projalpha==1/2){
+meanshape<-cbind( t(H)%*%(sqrt(lam[1])*eig$vectors[,1])/sqrt(lam[1]+lam[2]) , -t(H)%*%(sqrt(lam[2])*eig$vectors[,2])/sqrt(lam[1]+lam[2]) )
+}
+if (projalpha==1){
+lambar<-(lam[1]+lam[2])/2
+meanshape<-cbind( t(H)%*%(sqrt(lam[1]-lambar+1/m)*eig$vectors[,1]) , -t(H)%*%(sqrt(lam[2]-lambar+1/m)*eig$vectors[,2]) )
+}
+}
+
+if (m == 3){
+if (projalpha==1/2){
+meanshape<-cbind( t(H)%*%(sqrt(lam[1])*eig$vectors[,1])/sqrt(lam[1]+lam[2]+lam[3]) , t(H)%*%(sqrt(lam[2])*eig$vectors[,2])/sqrt(lam[1]+lam[2]+lam[3]),t(H)%*%(sqrt(lam[3])*eig$vectors[,3])/sqrt(lam[1]+lam[2]+lam[3]) )
+}
+if (projalpha==1){
+lambar<-(lam[1]+lam[2]+lam[3])/3
+meanshape<-cbind( t(H)%*%(sqrt(abs(lam[1]-lambar+1/m))*eig$vectors[,1]) , t(H)%*%(sqrt(abs(lam[2]-lambar+1/m))*eig$vectors[,2]) ,t(H)%*%(sqrt(abs(lam[3]-lambar+1/m))*eig$vectors[,3]))
+}
+}
+if (riemdist(meanshape,mu)>riemdist(meanshape,mu,reflect=TRUE)){
+meanshape[,m]<--meanshape[,m]
+}
+meanshape
+}
+
+
 

@@ -1,4 +1,6 @@
 \name{shapes-internal}
+\alias{sooty.dat}
+\alias{MDSshape}
 \alias{distCholesky}
 \alias{distEuclidean}
 \alias{distLogEuclidean}

@@ -1,18 +1,18 @@
 Package: shapes
-Title: Statistical shape analysis
-Date: 2014-9-20
-Version: 1.1-10
+Title: Statistical Shape Analysis
+Date: 2015-8-18
+Version: 1.1-11
 Author: Ian L. Dryden
-Description: Routines for the statistical analysis
-  of shapes. In particular, the package provides routines for
-  Procrustes analysis, displaying shapes and principal components,
-  testing for mean shape difference, thin-plate spline transformation
-  grids and comparing covariance matrices. 
+Description: Routines for the statistical analysis of landmark 
+  shapes, including Procrustes analysis, graphical displays, principal
+  components analysis, permutation and bootstrap tests, thin-plate 
+  spline transformation grids and comparing covariance matrices. 
 Maintainer: Ian Dryden   <ian.dryden@nottingham.ac.uk>
-Depends: scatterplot3d, rgl, MASS
+Imports: scatterplot3d, rgl, MASS
+Depends: R (>= 2.10)
 License: GPL-2
 URL: http://www.maths.nottingham.ac.uk/~ild/shapes
-Packaged: 2014-09-20 18:53:54 UTC; pmzild
 NeedsCompilation: no
+Packaged: 2015-08-18 17:28:10 UTC; pmzild
 Repository: CRAN
-Date/Publication: 2014-09-20 22:06:05
+Date/Publication: 2015-08-18 20:20:58

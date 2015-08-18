@@ -7,3 +7,9 @@ import(
   rgl,
   MASS
 )
+
+importFrom("graphics", "arrows", "lines", "par", "persp", "plot",
+             "points", "text", "title")
+importFrom("stats", "cmdscale", "cor", "cov", "nlm", "pchisq", "pf",
+             "prcomp", "predict", "qchisq", "rnorm", "var")
+
