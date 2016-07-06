@@ -4,9 +4,9 @@
 # written by Ian Dryden in R  (see http://cran.r-project.org) 
 # (c) Ian Dryden
 #     University of Nottingham
-#                        2015
+#                        2016
 #
-#          Version 1.1-11   Date: August 18, 2015
+#          Version 1.1-12   Date: January 27, 2016
 #
 #----------------------------------------------------------------------
 #
@@ -455,6 +455,24 @@ out
 
 
 ###########################
+
+procdist<-function(x,y,type="full",reflect=FALSE){
+if (type=="full"){
+out<-sin(riemdist(x,y,reflect=reflect))
+}
+if (type=="partial"){
+out<-sqrt(2)*sqrt(abs(1-cos(riemdist(x,y,reflect=reflect))))
+}
+if (type=="Riemannian"){
+out<-riemdist(x,y,reflect=reflect)
+}
+if (type=="sizeandshape"){
+out<-ssriemdist(x,y,reflect=reflect)
+}
+out
+}
+
+
 
 
 transformations<-function(Xrotated,Xoriginal){
@@ -1378,7 +1396,10 @@ zpos[ii] <- (zup + zlo)/2 + (zup - zlo)/2* zslice[ii]
     for (i in 1:m) {
         trace <- trace + WtY[i, i]
     }
-    benergy <- (1/(8 * pi)) * trace
+    benergy <- 16* pi * trace
+if (m==3){
+    benergy <- 8* pi * trace
+}
     l <- kx * ky
     phi <- matrix(0, l, m)
     s <- matrix(0, k, 1)
@@ -2814,7 +2835,10 @@ ybegin<-aa$yl
     for (i in 1:2) {
         trace <- trace + WtY[i, i]
     }
-    benergy <- (1/(8 * pi)) * trace
+    benergy <- 16* pi * trace
+if (m==3){
+    benergy <- 8* pi * trace
+}
     l <- kx * ky
     phi <- matrix(0, l, 2)
     s <- matrix(0, k, 1)
@@ -3024,7 +3048,7 @@ proc$tan <- HH %*% proc$tan
 if (m == 3){
 He <- t( defh(k-1) )
 Ze <- He*0
-HH <- rbind( cbind( defh(k-1), Ze, Ze ) , cbind(Ze, defh(k-1) , Ze ) , cbind( Ze, Ze, defh(k-1) ) )
+HH <- rbind( cbind( He, Ze, Ze ) , cbind(Ze, He , Ze ) , cbind( Ze, Ze, He ) )
 proc$tan <- HH %*% proc$tan
 }
 }
