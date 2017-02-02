@@ -4,15 +4,7 @@
 # written by Ian Dryden in R  (see http://cran.r-project.org) 
 # (c) Ian Dryden
 #     University of Nottingham
-#                        2016
-#
-#          Version 1.1-12   Date: January 27, 2016
-#
-#----------------------------------------------------------------------
-#
-#
-#
-#
+#                        2017
 #
 #
 ###########################################################################
