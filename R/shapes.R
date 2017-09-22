@@ -3068,6 +3068,7 @@ Bedim <- 5
 }
 
 ev <- eigen(Be,symmetric=TRUE)
+evpw <- eigen(Gamma11,symmetric=TRUE)
 
 Beminusalpha <- ev$vectors %*% diag( c(ev$values[ 1:(M-Bedim)]**(-alpha/2), rep(0, times = nconstr + Bedim)) )%*%t( ev$vectors)
 Bealpha <- ev$vectors %*% diag( c(ev$values[ 1:(M-Bedim) ]**(alpha/2),  rep(0, times = nconstr + Bedim)  ))%*%
@@ -3119,8 +3120,8 @@ for (i in 1:m){
 partialwarpscores[,i,] <- t( t(evbend$vectors)%*%proc$rotated[,i,] )
 }
 
-rw$principalwarps<- evbe$vectors[,(k-m-1):1]
-rw$principalwarps.eigenvalues <- evbe$values[(k-m-1):1]
+rw$principalwarps<- evpw$vectors[,(k-m-1):1]
+rw$principalwarps.eigenvalues <- evpw$values[(k-m-1):1]
 rw$partialwarpscores <- partialwarpscores[,,(k-m-1):1] 
 
 sumvar <- rep(0, times= (k-m-1) )
