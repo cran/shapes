@@ -9,6 +9,411 @@
 #
 ###########################################################################
 
+##### Penalised Euclidean Distance Regression
+
+PED<-function(X,Y,method="AIC"){
+if (method=="AIC"){
+aicmin <- 999999999
+for (lam in c(0.2,0.5,1.0)){
+for (cofp in c(0.75,1,1.35,1.5)){
+	out   <- pedreg(X,Y,nlambda=1,constc0=1.1,constc1=cofp,lambdainit=lam)
+if (out$aic < aicmin){
+  minout<-out
+ mincofp<-cofp
+  aicmin<-out$aic
+}
+} }
+     out<-minout
+}
+if (method=="khat"){
+aicmin <- 999999999
+for (lam in c(0.2,0.5,1.0)){
+for (cofp in c(0.75,1,1.25,1.5)){
+	out   <- pedreg(X,Y,nlambda=1,constc0=1.1,constc1=cofp,lambdainit=lam)
+if (-out$khat < aicmin){
+  minout<-out
+  mincofp<-cofp
+  aicmin<- -out$khat
+}
+} }
+     out<-minout
+}
+if (method=="CV"){
+n<-length(Y)
+cvmin <- 999999999
+for (lam in c(0.2,0.5,1.0)){
+for (cofp in c(0.75,1,1.25,1.5)){
+cverr<-0
+for (jj in 1:10){
+subsample<- ( (jj-1)*10+1 ): ( (jj-1)*10+10 )
+	out   <- pedreg(X[-subsample,],Y[-subsample],nlambda=1,constc0=1.1,constc1=cofp,lambdainit=lam)
+cverr<-cverr+Enorm(Y[subsample]-out$intercept-X[subsample,]%*%out$betahat)**2
+}
+if (cverr < cvmin){
+  minout<-out
+  minlam<-lam
+  mincofp<-cofp
+  cvmin<- cverr
+}
+} }
+     out<-pedreg(X,Y,nlambda=1,constc0=1.1,constc1=mincofp,lambdainit=minlam)
+}
+
+
+out1<-list(betahat=0,yhat=0,lambda=0,coef=0,resid=0)
+out1$intercept<-out$intercept
+out1$coef<-c(out$intercept,out$betahat)
+out1$betahat<-out$betahat
+out1$lambda<-out$lambda
+out1$delta<-mincofp
+out1$yhat<-out$yhat
+out1$resid<-Y-out$yhat
+
+
+
+out1
+}
+
+###########################function for PED#####################
+
+
+
+
+pedreg<-function(X,Y,constc0=1.1,constc1=1.35,alpha=0.05,LMM=50,MIT=10000,NUM_METHOD=1,nlambda=1,lambdamax=1,PLOT=TRUE,BIC=FALSE,lambdainit=1){
+
+  # NUM_METHOD = 1 = L-BFGS-B (1 seems better) 2 = NLOPT_LD_LBFGS
+  # LMM = Parameter M in L-BFGS method 1
+  # MIT = Max iterations for optimization 
+
+
+
+p<-dim(X)[2]
+n<-dim(X)[1]
+constc<-constc0
+Ymean<-mean(Y)
+Ysd<-sd(Y)
+Yinit<-Y
+
+pinit<-p
+ans0<-rep(0,times=pinit)
+
+Xorig<-X
+Yorig<-Y
+
+vm<-rep(0,times=ncol(X))
+vsd<-rep(0,times=ncol(X))
+
+for (i in 1:ncol(X)){vm[i]<-mean(X[,i])}
+for (i in 1:ncol(X)){vsd[i]<-sd(X[,i])}
+
+
+
+
+
+#standardize to sphere
+
+X <- scale(X)/sqrt(n-1)
+Y <- scale(Y)/sqrt(n-1)
+
+
+X0<-X
+Y0<-Y
+
+
+
+
+lambdainit1<-constc/sqrt(n-1)*sqrt(sqrt(p))/n*qnorm(1-alpha/(2*p))
+if (nlambda==1){
+lambdainit1<-lambdainit
+}
+
+
+METHOD1<-"L-BFGS-B"
+xi<- -9999999
+c1<-1
+
+
+
+nlam<-nlambda
+betamat<-matrix(0,p,nlam)
+betamat.sparse<-betamat
+lambdamat<-rep(0,times=nlam)
+ximat<-rep(0,times=nlam)
+aic<-rep(0,times=nlam)
+npar<-rep(0,times=nlam)
+selectmat<-betamat
+#cat(c("Lambda iteration (out of ",nlam,"):"))
+
+for (ilam in (nlam:1)){
+#cat(c(ilam," "))
+
+if (nlam==1){
+lambda <-lambdainit1
+}
+if (nlam>1){
+c1<-sqrt(n)+(ilam-1)/(nlam-1)*1/lambdainit1
+c1<- sqrt(n)+((ilam-1)/(nlam-1) ) *1/lambdainit1*(lambdamax-lambdainit1*sqrt(n))
+lambda <- lambdainit1*c1
+}
+
+if (ilam==nlam){
+x0 <- rep(1/sqrt(p),times=p)
+}
+
+if (ilam!=nlam){
+x0<-betahat+rnorm(p)/sqrt(p)
+}
+#x0<-rnorm(p)/sqrt(p)
+
+
+
+
+ped<-function(pars,Y=0,X=0){
+p<-length(pars)
+pars<-matrix(pars,p,1)
+ped<- Enorm(Y-X%*%pars) + lambda*sqrt(Enorm(pars)*sum(abs(pars))) 
+ped
+}
+
+
+
+pedgrad<-function(pars,X=0,Y=0){
+GM<-sqrt(Enorm(pars)*sum(abs(pars)))
+gradL<-rep(0,times=p)
+
+gradL <-  -t(X)%*%(Y-X%*%pars)/Enorm(Y-X%*%pars)
+gradL<-gradL+ matrix( lambda/2*pars/Enorm(pars)*sum(abs(pars))/GM+
+             lambda/2*sign(pars)*Enorm(pars)/GM ,p,1) 
+
+
+c(gradL)
+}
+
+
+
+
+if (NUM_METHOD==1){
+repeat{
+#,ndeps=1e-3,factr=1e-5,pgtol=1e-5
+res2 <- optim( par=x0, fn=ped, gr=pedgrad, method=METHOD1,control=list(lmm=LMM,maxit=MIT),X=X,Y=Y)
+betahat<-res2$par
+if (res2$convergence==0){
+break
+}
+x0<-rnorm(p)/sqrt(p)
+}
+}
+
+
+
+
+
+
+oldxi <- xi
+xi <- sqrt(Enorm(betahat)/sum(abs(betahat))) - sqrt(n)/(constc*c1*p^(1/4))
+
+dif <- (xi-oldxi)
+
+
+#print(max(abs(pedgrad(betahat,X=X,Y=Y))))
+
+REGC<-0.0001
+
+betamat[,ilam]<-betahat/(Enorm(betahat)+REGC)
+
+lambdamat[ilam]<-lambda
+ximat[ilam]<-xi
+
+ximat[ilam]<- sqrt(Enorm(betahat)/sum(abs(betahat)))
+
+
+MM <- constc1/(sqrt(n))
+
+
+select<- (abs(betahat)/(Enorm(betahat)+REGC) > MM)
+selectmat[,ilam]<-select
+betamat.sparse[,ilam]<-betamat[,ilam]
+betamat.sparse[select==FALSE,ilam]<-0*betamat[select==FALSE,ilam]
+
+pp<-sum(select)
+npar[ilam]<-pp
+aic[ilam]<-log(Enorm(Y)**2/n)*(n) +log(n)*(1)
+if (sum(select)>0){
+aa<-lm(Y~ X[,c(1:p)[select]] - 1)
+pred<-predict(aa) 
+
+# Use AIC with finite sample correction
+aic[ilam]<-log(Enorm(Y-pred)**2/n)*(n)  + 2*(pp+1) +2*(pp+1)*(pp+2)/(n-pp-2)
+# Use AIC/BIC
+ #  aic[ilam]<-log(Enorm(Y-pred)**2/n)*(n) +log(n)*(pp+1)
+   aic[ilam]<-log(Enorm(Y-pred)**2/n)*(n) +2*(pp+1)
+ }
+
+
+
+
+}
+
+
+best<-1
+if (nlam>1){
+
+###########################################choose best via BIC
+
+
+best<-c(1:nlam)[aic==min(aic)][1]
+select<-as.logical(selectmat[,best])
+lambdaaic<-lambdamat[best]
+
+
+###########################################choose best via Corollary 1 with xi
+best2<-nlam
+if( (sum(ximat>0.25))>0){
+best2<-c(1:nlam)[(ximat)>0.25][1]
+}
+
+#################### biggest xi from Corollary 1
+
+xism<-(ximat)
+if (sum(diff(xism)<0.01)>0){
+best2<-c(2:nlam)[diff(xism)<0.01][1]-1
+}
+
+############## biggest sqrt( Enorm(beta) / norm(beta)_1 )
+
+best2<- c(1:nlam)[ximat==max(ximat)]
+
+selectcor<-as.logical(selectmat[,best2])
+lambdacor1<-lambdamat[best2]
+
+
+if (BIC==FALSE){
+best<-best2
+select<-selectcor
+}
+}
+
+################last part######estimate with reduced p###########
+
+if (sum(select)>0){
+X<-as.matrix(X[,select])
+p<-sum(select)     
+p14<-sqrt(sqrt(p))
+final <- c(1:pinit)[select]
+}
+
+
+#######
+
+
+
+
+lambda<-constc/sqrt(sqrt(p))/sqrt(n)*qnorm(1-alpha/(2*p)) 
+
+
+
+
+if (sum(select)>0){
+
+
+
+x0 <- rep(1/p,times=p)
+
+
+if (sum(select)==1){
+NUM_METHOD<-2
+}
+
+
+
+
+
+if (NUM_METHOD==1){
+repeat{
+res2 <- optim( par=x0, fn=ped, gr=pedgrad, method=METHOD1,control=list(lmm=LMM,maxit=MIT),X=X,Y=Y)
+betahat<-res2$par
+
+if (res2$convergence==0){
+break
+}
+
+x0<-rnorm(p)/p
+}
+}
+
+
+
+
+ans0[final]<-betahat
+
+}
+
+#ind<-which(abs(ans0/Enorm(ans0))<10^(-5))
+#ans0[ind]<-0
+
+
+
+out<-list(betahat=0,yhat=0,lambda=0)
+
+
+out$betahatscale<-ans0
+out$yhatscale<-c(X0%*%ans0)
+
+if (nlam>1){
+out$lambdacor1<-lambdacor1
+out$lambdaaic<-lambdaaic
+out$betamat.sparse<-betamat.sparse
+out$betamat.rescale<-betamat
+out$betamat<-betamat
+for (i in 1:nlam){
+out$betamat.rescale[,i]<-c(out$betamat[,i]/vsd)*sd(Yorig)
+}
+out$lambdamat<-lambdamat
+out$ximat<-ximat
+out$MM<-MM
+out$fmax<-res2$value
+out$npar<-npar
+out$selectmat<-selectmat
+}
+
+#use AIC
+out$aic<- aic
+
+#use khat
+out$khat<- ximat
+
+out$lambdath3<-lambdainit1*sqrt(n)
+
+out$lambda<-out$lambdacor1
+if (BIC==TRUE){
+out$lambda<-out$lambdaaic
+}
+
+if (nlam==1){
+out$lambda<-lambdainit1
+out$constc1<-constc1
+}
+
+
+
+
+
+sol<-sd(Yorig)*c(ans0/vsd)
+inter<-drop(mean(Yorig)-sd(Yorig)*(vm/vsd)%*%ans0)
+out$intercept <- drop(mean(Yorig)-sd(Yorig)*(vm/vsd)%*%ans0)
+out$betahat <- sd(Yorig)*c(ans0/vsd)
+out$best<-best
+out$Yinit<-Yinit
+
+
+
+out$yhat <- Xorig%*%sol+inter
+
+out
+}
+
+
+
 
 
 ############################################################
@@ -1409,7 +1814,7 @@ if (m == 2){
     for (i in 1:l) {
         s <- matrix(0, k, 1)
         for (im in 1:k) {
-            s[im, ] <- sigma(refc[i, ] - TT[im, ])
+            s[im, ] <- sigmacov(refc[i, ] - TT[im, ])
         }
         phi[i, ] <- ta + t(B) %*% refc[i, ] + t(W) %*% s
     }
@@ -2837,7 +3242,7 @@ if (m==3){
     for (i in 1:l) {
         s <- matrix(0, k, 1)
         for (m in 1:k) {
-            s[m, ] <- sigma(refc[i, ] - TT[m, ])
+            s[m, ] <- sigmacov(refc[i, ] - TT[m, ])
         }
         phi[i, ] <- ta + t(B) %*% refc[i, ] + t(W) %*% s
     }
@@ -2900,7 +3305,7 @@ bendingenergy<-function (TT)
     S <- matrix(0, k, k)
     for (i in 1:k) {
         for (j in 1:k) {
-            S[i, j] <- sigma(TT[i, ] - TT[j, ])
+            S[i, j] <- sigmacov(TT[i, ] - TT[j, ])
         }
     }
 
@@ -3540,7 +3945,7 @@ partialwarpgrids<-function(TT, YY, xbegin, ybegin, xwidth, nr, nc, mag)
 	for(i in 1:l) {
 		s <- matrix(0, k, 1)
 		for(m in 1:k) {
-			s[m,  ] <- sigma(refc[i,  ] - TT[m,  ])
+			s[m,  ] <- sigmacov(refc[i,  ] - TT[m,  ])
 		}
 		phi[i,  ] <- ta + t(B) %*% refc[i,  ]
 	}
@@ -3548,7 +3953,7 @@ partialwarpgrids<-function(TT, YY, xbegin, ybegin, xwidth, nr, nc, mag)
 	for(i in 1:k) {
 		s <- matrix(0, k, 1)
 		for(m in 1:k) {
-			s[m,  ] <- sigma(TT[i,  ] - TT[m,  ])
+			s[m,  ] <- sigmacov(TT[i,  ] - TT[m,  ])
 		}
 		newpt[i,  ] <- ta + t(B) %*% TT[i,  ]
 	}
@@ -3566,7 +3971,7 @@ partialwarpgrids<-function(TT, YY, xbegin, ybegin, xwidth, nr, nc, mag)
 		for(i in 1:l) {
 			s <- matrix(0, k, 1)
 			for(m in 1:k) {
-				s[m,  ] <- sigma(refc[i,  ] - TT[m,  ])
+				s[m,  ] <- sigmacov(refc[i,  ] - TT[m,  ])
 			}
 			phi[i,  ] <- refc[i,  ] + TPS$prinwarpeval[nw] * t(YY) %*% 
 				TPS$prinwarps[, nw] %*% t(TPS$prinwarps[, nw]) %*% 
@@ -3576,7 +3981,7 @@ partialwarpgrids<-function(TT, YY, xbegin, ybegin, xwidth, nr, nc, mag)
 		for(i in 1:k) {
 			s <- matrix(0, k, 1)
 			for(m in 1:k) {
-				s[m,  ] <- sigma(TT[i,  ] - TT[m,  ])
+				s[m,  ] <- sigmacov(TT[i,  ] - TT[m,  ])
 			}
 			newpt[i,  ] <- TT[i,  ] + TPS$prinwarpeval[nw] * t(YY) %*% 
 				TPS$prinwarps[, nw] %*% t(TPS$prinwarps[, nw]) %*% 
@@ -3962,7 +4367,7 @@ plotprinwarp<-function(TT, xbegin, ybegin, xwidth, nr, nc)
 	for(i in 1:l) {
 		s <- matrix(0, k, 1)
 		for(m in 1:k) {
-			s[m,  ] <- sigma(refperp[i,  ] - TT[m,  ])
+			s[m,  ] <- sigmacov(refperp[i,  ] - TT[m,  ])
 		}
 		phi[i,  ] <- diag(sqrt(TPS$prinwarpeval[1:(k - 3)])) %*% t(
 			prinwarp[, 1:(k - 3)]) %*% s
@@ -3971,7 +4376,7 @@ plotprinwarp<-function(TT, xbegin, ybegin, xwidth, nr, nc)
 	for(i in 1:k) {
 		s <- matrix(0, k, 1)
 		for(m in 1:k) {
-			s[m,  ] <- sigma(TT[i,  ] - TT[m,  ])
+			s[m,  ] <- sigmacov(TT[i,  ] - TT[m,  ])
 		}
 		phiTT[i,  ] <- diag(sqrt(TPS$prinwarpeval[1:(k - 3)])) %*% t(
 			prinwarp[, 1:(k - 3)]) %*% s
@@ -4208,7 +4613,7 @@ prinwscoregrids<-function(TT, TPS, score, xbegin, ybegin, xwidth, nr, nc)
 		for(i in 1:l) {
 			s <- matrix(0, k, 1)
 			for(m in 1:k) {
-				s[m,  ] <- sigma(refc[i,  ] - TT[m,  ])
+				s[m,  ] <- sigmacov(refc[i,  ] - TT[m,  ])
 			}
 			phi[i,  ] <- refc[i,  ] + sqrt(TPS$prinwarpeval[nw]) * 
 				score * t(TPS$prinwarps[, nw]) %*% s
@@ -4217,7 +4622,7 @@ prinwscoregrids<-function(TT, TPS, score, xbegin, ybegin, xwidth, nr, nc)
 		for(i in 1:k) {
 			s <- matrix(0, k, 1)
 			for(m in 1:k) {
-				s[m,  ] <- sigma(TT[i,  ] - TT[m,  ])
+				s[m,  ] <- sigmacov(TT[i,  ] - TT[m,  ])
 			}
 			newpt[i,  ] <- TT[i,  ] + sqrt(TPS$prinwarpeval[nw]) * 
 				score * t(TPS$prinwarps[, nw]) %*% s
@@ -4970,7 +5375,7 @@ rotateaxes<-function(mshapein, rotatedin)
 #	sig
 #}
 
-sigma<-function( x )
+sigmacov<-function( x )
 {
 #  other radial basis functions/covariance functions are possible of course
 

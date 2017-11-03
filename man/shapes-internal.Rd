@@ -1,4 +1,5 @@
 \name{shapes-internal}
+\alias{pedreg}
 \alias{sooty.dat}
 \alias{MDSshape}
 \alias{distCholesky}
@@ -160,7 +161,7 @@
 \alias{schizo.dat}
 \alias{sgpa}
 \alias{sh}
-\alias{sigma}
+\alias{sigmacov}
 \alias{sim1}
 \alias{st}
 \alias{tanfigure}
