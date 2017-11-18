@@ -11,7 +11,7 @@
 
 ##### Penalised Euclidean Distance Regression
 
-PED<-function(X,Y,method="AIC"){
+ped<-function(X,Y,method=c("AIC")){
 if (method=="AIC"){
 aicmin <- 999999999
 for (lam in c(0.2,0.5,1.0)){
@@ -25,6 +25,21 @@ if (out$aic < aicmin){
 } }
      out<-minout
 }
+
+if (method=="BIC"){
+bicmin <- 999999999
+for (lam in c(0.2,0.5,1.0)){
+for (cofp in c(0.75,1,1.35,1.5)){
+	out   <- pedreg(X,Y,nlambda=1,constc0=1.1,constc1=cofp,lambdainit=lam)
+if (out$bic < bicmin){
+  minout<-out
+ mincofp<-cofp
+  bicmin<-out$bic
+}
+} }
+     out<-minout
+}
+
 if (method=="khat"){
 aicmin <- 999999999
 for (lam in c(0.2,0.5,1.0)){
@@ -81,7 +96,7 @@ out1
 
 pedreg<-function(X,Y,constc0=1.1,constc1=1.35,alpha=0.05,LMM=50,MIT=10000,NUM_METHOD=1,nlambda=1,lambdamax=1,PLOT=TRUE,BIC=FALSE,lambdainit=1){
 
-  # NUM_METHOD = 1 = L-BFGS-B (1 seems better) 2 = NLOPT_LD_LBFGS
+  # NUM_METHOD = 1 = L-BFGS-B 
   # LMM = Parameter M in L-BFGS method 1
   # MIT = Max iterations for optimization 
 
@@ -140,6 +155,7 @@ betamat.sparse<-betamat
 lambdamat<-rep(0,times=nlam)
 ximat<-rep(0,times=nlam)
 aic<-rep(0,times=nlam)
+bic<-rep(0,times=nlam)
 npar<-rep(0,times=nlam)
 selectmat<-betamat
 #cat(c("Lambda iteration (out of ",nlam,"):"))
@@ -168,7 +184,7 @@ x0<-betahat+rnorm(p)/sqrt(p)
 
 
 
-ped<-function(pars,Y=0,X=0){
+pedfun<-function(pars,Y=0,X=0){
 p<-length(pars)
 pars<-matrix(pars,p,1)
 ped<- Enorm(Y-X%*%pars) + lambda*sqrt(Enorm(pars)*sum(abs(pars))) 
@@ -195,7 +211,7 @@ c(gradL)
 if (NUM_METHOD==1){
 repeat{
 #,ndeps=1e-3,factr=1e-5,pgtol=1e-5
-res2 <- optim( par=x0, fn=ped, gr=pedgrad, method=METHOD1,control=list(lmm=LMM,maxit=MIT),X=X,Y=Y)
+res2 <- optim( par=x0, fn=pedfun, gr=pedgrad, method=METHOD1,control=list(lmm=LMM,maxit=MIT),X=X,Y=Y)
 betahat<-res2$par
 if (res2$convergence==0){
 break
@@ -215,7 +231,6 @@ xi <- sqrt(Enorm(betahat)/sum(abs(betahat))) - sqrt(n)/(constc*c1*p^(1/4))
 dif <- (xi-oldxi)
 
 
-#print(max(abs(pedgrad(betahat,X=X,Y=Y))))
 
 REGC<-0.0001
 
@@ -237,7 +252,9 @@ betamat.sparse[select==FALSE,ilam]<-0*betamat[select==FALSE,ilam]
 
 pp<-sum(select)
 npar[ilam]<-pp
-aic[ilam]<-log(Enorm(Y)**2/n)*(n) +log(n)*(1)
+bic[ilam]<-log(Enorm(Y)**2/n)*(n) +log(n)*(1)
+aic[ilam]<-log(Enorm(Y)**2/n)*(n) +2*(1)
+
 if (sum(select)>0){
 aa<-lm(Y~ X[,c(1:p)[select]] - 1)
 pred<-predict(aa) 
@@ -245,7 +262,7 @@ pred<-predict(aa)
 # Use AIC with finite sample correction
 aic[ilam]<-log(Enorm(Y-pred)**2/n)*(n)  + 2*(pp+1) +2*(pp+1)*(pp+2)/(n-pp-2)
 # Use AIC/BIC
- #  aic[ilam]<-log(Enorm(Y-pred)**2/n)*(n) +log(n)*(pp+1)
+   bic[ilam]<-log(Enorm(Y-pred)**2/n)*(n) +log(n)*(pp+1)
    aic[ilam]<-log(Enorm(Y-pred)**2/n)*(n) +2*(pp+1)
  }
 
@@ -258,7 +275,7 @@ aic[ilam]<-log(Enorm(Y-pred)**2/n)*(n)  + 2*(pp+1) +2*(pp+1)*(pp+2)/(n-pp-2)
 best<-1
 if (nlam>1){
 
-###########################################choose best via BIC
+###########################################choose best via AIC
 
 
 best<-c(1:nlam)[aic==min(aic)][1]
@@ -266,7 +283,7 @@ select<-as.logical(selectmat[,best])
 lambdaaic<-lambdamat[best]
 
 
-###########################################choose best via Corollary 1 with xi
+###########################################choose best via Corollary 1 with khat
 best2<-nlam
 if( (sum(ximat>0.25))>0){
 best2<-c(1:nlam)[(ximat)>0.25][1]
@@ -320,17 +337,9 @@ if (sum(select)>0){
 x0 <- rep(1/p,times=p)
 
 
-if (sum(select)==1){
-NUM_METHOD<-2
-}
-
-
-
-
-
 if (NUM_METHOD==1){
 repeat{
-res2 <- optim( par=x0, fn=ped, gr=pedgrad, method=METHOD1,control=list(lmm=LMM,maxit=MIT),X=X,Y=Y)
+res2 <- optim( par=x0, fn=pedfun, gr=pedgrad, method=METHOD1,control=list(lmm=LMM,maxit=MIT),X=X,Y=Y)
 betahat<-res2$par
 
 if (res2$convergence==0){
@@ -378,6 +387,8 @@ out$selectmat<-selectmat
 
 #use AIC
 out$aic<- aic
+#use BIC
+out$bic<- bic
 
 #use khat
 out$khat<- ximat

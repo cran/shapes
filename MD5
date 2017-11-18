@@ -1,7 +1,7 @@
-8fa8ba7c167f9ccec7d37d92898582e4 *DESCRIPTION
-16725c94a16ed06e31664ec89fef2891 *INSTALL
+beb52a8b6828e11a7435b6c2ae008afb *CHANGES
+7cd45159c082032ddf66bdbaf7c6de1e *DESCRIPTION
 1708f74e6c55d60d967a471b9464ce3f *NAMESPACE
-99fe752325332c99d6fba8ecc18459b4 *R/shapes.R
+d3114b98748ee76a68944176c61c431a *R/shapes.R
 9c052bcc8a404423f3c4f8344880f6e2 *data/apes.rda
 99418bab9b7a3884a635f6ce056fb48d *data/brains.rda
 457426b9ee1cd8d27fd581797556cb4d *data/cortical.rda
@@ -34,7 +34,6 @@ deccfb436391ce492b483f2d349dad50 *data/shells.rda
 682cbe8553361be4603b39c479a03fec *data/steroids.rda
 410cc000136d80ba87a663749aa276f2 *demo/00Index
 5d448fe971892a3483515f40c5402a34 *demo/shapes.R
-7dba25f85a08fb8f6936ea322c0e24b7 *man/PED.Rd
 103cf9223049b9d655fb0f211386aeba *man/apes.Rd
 3c71ee9de021795217c4be31f2591b95 *man/bookstein2d.Rd
 43caf534efe53a155446b090fe16e932 *man/brains.Rd
@@ -74,7 +73,7 @@ cc8c84aed95bb1f2ca446ddc99fbaf7b *man/resampletest.Rd
 c0c2ec3509ba14a0d765eb0a73172bf1 *man/schizophrenia.Rd
 ed8fda94455439858da784dc70b9385e *man/schizophrenia.dat.Rd
 d2f47b4bb3a61161aa8579d84f22c941 *man/shapepca.Rd
-8eb69c8be59313ee6268c6af73939d7b *man/shapes-internal.Rd
+c77ddf5e3f39868c1421aa9167cdd58a *man/shapes-internal.Rd
 1169969392d78131ab0868b3917e2a21 *man/shapes.cva.Rd
 b165fd3215b86d01e5243d8fa7a5cdd9 *man/shapes3d.Rd
 f23d5fc6b98042f0a441f549ee5c7020 *man/shells.Rd

@@ -1,4 +1,5 @@
 \name{shapes-internal}
+\alias{ped}
 \alias{pedreg}
 \alias{sooty.dat}
 \alias{MDSshape}
