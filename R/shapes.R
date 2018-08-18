@@ -9,6 +9,1186 @@
 #
 ###########################################################################
 
+
+# PNS
+
+pns = function(x, sphere.type = "seq.test", alpha = 0.1, R = 100, nlast.small.sphere = 0)
+{
+   n = ncol(x)
+   k = nrow(x)
+   if (abs(sum(apply(x^2, 2, sum)) - n) > 1e-8)
+   {
+      stop("Error: Each column of x should be a unit vector, ||x[ , i]|| = 1.")
+   }
+   svd.x = svd(x, nu = nrow(x))
+   uu = svd.x$u
+   maxd = which(svd.x$d < 1e-15)[1]
+   if (is.na(maxd) | k > n)
+   {
+      maxd = min(k, n) + 1
+   }
+   nullspdim = k - maxd + 1
+   d = k - 1
+   cat("Message from pns() : dataset is on ", d, "-sphere. \n", sep = "")
+   if (nullspdim > 0)
+   {
+      cat(" .. found null space of dimension ", nullspdim, ", to be trivially reduced. \n", sep = "")
+   }
+   resmat = matrix(NA, d, n)
+   orthaxis = list()
+   orthaxis[[d - 1]] = NA
+   dist = rep(NA, d - 1)
+   pvalues = matrix(NA, d - 1, 2)
+   ratio = rep(NA, d - 1)
+   currentSphere = x
+   if (nullspdim > 0)
+   {
+      for (i in 1:nullspdim)
+      {
+         oaxis = uu[ , ncol(uu) - i + 1]
+         r = pi / 2
+         pvalues[i, ] = c(NaN, NaN)
+         res = acos(t(oaxis) %*% currentSphere) - r
+         orthaxis[[i]] = oaxis
+         dist[i] = r
+         resmat[i, ] = res
+         NestedSphere = rotMat(oaxis) %*% currentSphere
+         currentSphere = NestedSphere[1:(k - i), ] /
+                         repmat(matrix(sqrt(1 - NestedSphere[nrow(NestedSphere), ]^2), nrow = 1), k - i, 1)
+         uu = rotMat(oaxis) %*% uu
+         uu = uu[1:(k - i), ] / repmat(matrix(sqrt(1 - uu[nrow(uu), ]^2), nrow = 1), k - i, 1)
+         cat(d - i + 1, "-sphere to ",
+             d - i, "-sphere, by ",
+             "NULL space \n", sep = "")
+      }
+   }
+   if (sphere.type == "seq.test")
+   {
+      cat(" .. sequential tests with significance level ", alpha, "\n", sep = "")
+      isIsotropic = FALSE
+      for (i in (nullspdim + 1):(d - 1))
+      {
+         if (!isIsotropic)
+         {
+            sp = getSubSphere(x = currentSphere, geodesic = "small")
+            center.s = sp$center
+            r.s = sp$r
+            resSMALL = acos(t(center.s) %*% currentSphere) - r.s
+            sp = getSubSphere(x = currentSphere, geodesic = "great")
+            center.g = sp$center
+            r.g = sp$r
+            resGREAT = acos(t(center.g) %*% currentSphere) - r.g
+            pval1 = LRTpval(resGREAT, resSMALL, n)
+            pvalues[i, 1] = pval1
+            if (pval1 > alpha)
+            {
+               center = center.g
+               r = r.g
+               pvalues[i, 2] = NA
+               cat(d - i + 1, "-sphere to ",
+                   d - i, "-sphere, by GREAT sphere, p(LRT) = ", pval1, "\n", sep = "")
+            } else {
+               pval2 = vMFtest(currentSphere, R)
+               pvalues[i, 2] = pval2
+               if (pval2 > alpha)
+               {
+                  center = center.g
+                  r = r.g
+                  cat(d - i + 1, "-sphere to ",
+                      d - i, "-sphere, by GREAT sphere, p(LRT) = ", pval1,
+                      ", p(vMF) = ", pval2, "\n", sep = "")
+                  isIsotropic = TRUE
+               } else {
+                  center = center.s
+                  r = r.s
+                  cat(d - i + 1, "-sphere to ",
+                      d - i, "-sphere, by SMALL sphere, p(LRT) = ", pval1,
+                      ", p(vMF) = ", pval2, "\n", sep = "")
+               }
+            }
+         } else if (isIsotropic) {
+            sp = getSubSphere(x = currentSphere, geodesic = "great")
+            center = sp$center
+            r = sp$r
+            cat(d - i + 1, "-sphere to ",
+                d - i, "-sphere, by GREAT sphere, restricted by testing vMF distn", "\n", sep = "")
+            pvalues[i, 1] = NA
+            pvalues[i, 2] = NA
+         }
+         res = acos(t(center) %*% currentSphere) - r
+         orthaxis[[i]] = center
+         dist[i] = r
+         resmat[i, ] = res
+cur.proj = project.subsphere(x = currentSphere, center = center, r = r)
+         NestedSphere = rotMat(center) %*% currentSphere
+         currentSphere = NestedSphere[1:(k - i), ] /
+                         repmat(matrix(sqrt(1 - NestedSphere[nrow(NestedSphere), ]^2), nrow = 1), k - i, 1)
+
+if (nrow(currentSphere) == 3)
+{
+   plot3d(x = t(currentSphere),
+          xlab = "", ylab = "", zlab = "",
+          xlim = c(-1, 1), ylim = c(-1, 1), zlim = c(-1, 1),
+          box = FALSE, axes = FALSE, aspect = "iso")
+   axis3d(edge = 'x', labels = TRUE, tick = TRUE, at = c(-1, 1), pos = c(NA, 0, 0))
+   axis3d(edge = 'y', labels = TRUE, tick = TRUE, at = c(-1, 1), pos = c(0, NA, 0))
+   axis3d(edge = 'z', labels = TRUE, tick = TRUE, at = c(-1, 1), pos = c(0, 0, NA))
+}
+
+if (nrow(currentSphere) == 2)
+{
+   points3d(t(cur.proj), col = "red", size = 2)
+}
+
+      }
+   } else if (sphere.type == "BIC") {
+      cat(" .. with BIC \n")
+      for (i in (nullspdim + 1):(d - 1))
+      {
+         sp = getSubSphere(x = currentSphere, geodesic = "small")
+         center.s = sp$center
+         r.s = sp$r
+         resSMALL = acos(t(center.s) %*% currentSphere) - r.s
+         sp = getSubSphere(x = currentSphere, geodesic = "great")
+         center.g = sp$center
+         r.g = sp$r
+         resGREAT = acos(t(center.g) %*% currentSphere) - r.g
+         BICsmall = n * log(mean(resSMALL^2)) + (d - i + 1 + 1) * log(n)
+         BICgreat = n * log(mean(resGREAT^2)) + (d - i + 1) * log(n)
+         cat("BICsm: ", BICsmall, ", BICgr: ", BICgreat, "\n", sep = "")
+         if (BICsmall > BICgreat)
+         {
+            center = center.g
+            r = r.g
+            cat(d - i + 1, "-sphere to ",
+                d - i, "-sphere, by ",
+                "GREAT sphere, BIC \n", sep = "")
+         } else {
+            center = center.s
+            r = r.s
+            cat(d - i + 1, "-sphere to ",
+                d - i, "-sphere, by ",
+                "SMALL sphere, BIC \n", sep = "")
+         }
+         res = acos(t(center) %*% currentSphere) - r
+         orthaxis[[i]] = center
+         dist[i] = r
+         resmat[i, ] = res
+         NestedSphere = rotMat(center) %*% currentSphere
+         currentSphere = NestedSphere[1:(k - i), ] /
+                         repmat(matrix(sqrt(1 - NestedSphere[nrow(NestedSphere), ]^2), nrow = 1), k - i, 1)
+      }
+   } else if (sphere.type == "small" | sphere.type == "great") {
+      pvalues = NaN
+      for (i in (nullspdim + 1):(d - 1))
+      {
+         sp = getSubSphere(x = currentSphere, geodesic = sphere.type)
+         center = sp$center
+         r = sp$r
+         res = acos(t(center) %*% currentSphere) - r
+         orthaxis[[i]] = center
+         dist[i] = r
+         resmat[i, ] = res
+         NestedSphere = rotMat(center) %*% currentSphere
+         currentSphere = NestedSphere[1:(k - i), ] /
+                         repmat(matrix(sqrt(1 - NestedSphere[nrow(NestedSphere), ]^2), nrow = 1), k - i, 1)
+      }
+   } else if (sphere.type == "bi.sphere") {
+      if (nlast.small.sphere < 0)
+      {
+         cat("!!! Error from pns(): \n")
+         cat("!!! nlast.small.sphere should be >= 0. \n")
+         return(NULL)
+      }
+      mx = (d - 1) - nullspdim
+      if (nlast.small.sphere > mx)
+      {
+         cat("!!! Error from pns(): \n")
+         cat("!!! nlast.small.sphere should be <= ", mx, " for this data. \n", sep = "")
+         return(NULL)
+      }
+      pvalues = NaN
+      if (nlast.small.sphere != mx)
+      {
+         for (i in (nullspdim + 1):(d - 1 - nlast.small.sphere))
+         {
+            sp = getSubSphere(x = currentSphere, geodesic = "great")
+            center = sp$center
+            r = sp$r
+            res = acos(t(center) %*% currentSphere) - r
+            orthaxis[[i]] = center
+            dist[i] = r
+            resmat[i, ] = res
+            NestedSphere = rotMat(center) %*% currentSphere
+            currentSphere = NestedSphere[1:(k - i), ] /
+                            repmat(matrix(sqrt(1 - NestedSphere[nrow(NestedSphere), ]^2), nrow = 1), k - i, 1)
+         }
+      }
+      if (nlast.small.sphere != 0)
+      {
+         for (i in (d - nlast.small.sphere):(d - 1))
+         {
+            sp = getSubSphere(x = currentSphere, geodesic = "small")
+            center = sp$center
+            r = sp$r
+            res = acos(t(center) %*% currentSphere) - r
+            orthaxis[[i]] = center
+            dist[i] = r
+            resmat[i, ] = res
+            NestedSphere = rotMat(center) %*% currentSphere
+            currentSphere = NestedSphere[1:(k - i), ] /
+                            repmat(matrix(sqrt(1 - NestedSphere[nrow(NestedSphere), ]^2), nrow = 1), k - i, 1)
+         }
+      }
+   } else {
+      print("!!! Error from pns():")
+      print("!!! sphere.type must be 'seq.test', 'small', 'great', 'BIC', or 'bi.sphere'")
+      print("!!!   Terminating execution     ")
+      return(NULL)
+   }
+   S1toRadian = atan2(currentSphere[2, ], currentSphere[1, ])
+   meantheta = geodmeanS1(S1toRadian)$geodmean
+   orthaxis[[d]] = meantheta
+   resmat[d, ] = mod(S1toRadian - meantheta + pi, 2 * pi) - pi
+
+par(mfrow = c(1, 1), mar = c(4, 4, 1, 1), mgp = c(2.5, 1, 0), cex = 0.8)
+plot(currentSphere[1, ], currentSphere[2, ],
+     xlab = "", ylab = "",
+     xlim = c(-1, 1), ylim = c(-1, 1),
+     asp = 1)
+abline(h = 0, v = 0)
+points(cos(meantheta), sin(meantheta),
+       pch = 1, cex = 3, col = "black", lwd = 5)
+abline(a = 0, b = sin(meantheta) / cos(meantheta), lty = 3)
+l = mod(S1toRadian - meantheta + pi, 2 * pi) - pi
+points(cos(S1toRadian[which.max(l)]), sin(S1toRadian[which.max(l)]),
+       pch = 4, cex = 3, col = "blue")
+points(cos(S1toRadian[which.min(l)]), sin(S1toRadian[which.min(l)]),
+       pch = 4, cex = 3, col = "red")
+legend("topright",
+       legend = c("Geodesic mean", "Max (+)ve from mean", "Min (-)ve from mean"),
+       col = c("black", "blue", "red"), pch = c(1, 4, 4))
+{
+cat("\n")
+cat("length of BLUE from geodesic mean : ", max(l),
+    " (", round(max(l) * 180 / pi), " degree)", "\n", sep = "")
+cat("length of RED from geodesic mean : ", min(l),
+    " (", round(min(l) * 180 / pi), " degree)", "\n", sep = "")
+cat("\n")
+}
+   radii = 1
+   for (i in 1:(d - 1))
+   {
+      radii = c(radii, prod(sin(dist[1:i])))
+   }
+   resmat = flipud0(repmat(matrix(radii, ncol = 1), 1, n) * resmat)
+
+   PNS = list()
+   PNS$radii = radii
+   PNS$orthaxis = orthaxis
+   PNS$dist = dist
+   PNS$pvalues = pvalues
+   PNS$ratio = ratio
+   PNS$basisu = NULL
+   PNS$mean = c(PNSe2s(matrix(0, d, 1), PNS))
+   if (sphere.type == "seq.test")
+   {
+      PNS$sphere.type = "seq.test"
+   } else if (sphere.type == "small") {
+      PNS$sphere.type = "small"
+   } else if (sphere.type == "great") {
+      PNS$sphere.type = "great"
+   } else if (sphere.type == "BIC") {
+      PNS$sphere.type = "BIC"
+   }
+   varPNS = apply(abs(resmat)^2, 1, sum) / n
+   total = sum(varPNS)
+   propPNS = varPNS / total * 100
+   return(list(resmat = resmat, PNS = PNS, percent = propPNS))
+}
+
+pns4pc = function(x, sphere.type = "seq.test", alpha = 0.1, R = 100, nlast.small.sphere = 0, n.pc = 2)
+{
+   if (n.pc < 2)
+   {
+      stop("Error: n.pc should be >= 2.")
+   }
+   out = pc2sphere(x = x, n.pc = n.pc)
+   spheredata = t(out$spheredata)
+   GPAout = out$GPAout
+   pns.out = pns(x = spheredata, sphere.type = sphere.type, alpha = alpha, R = R, nlast.small.sphere = nlast.small.sphere)
+   pns.out$percent = pns.out$percent * sum(GPAout$percent[1:n.pc]) / 100
+   pns.out$GPAout = GPAout
+   pns.out$spheredata = spheredata
+   return(pns.out)
+}
+
+pns.pc = function(x, sphere.type = "seq.test", alpha = 0.1, R = 100, nlast.small.sphere = 0, n.pc = 0)
+{
+   k = dim(x)[1]
+   m = dim(x)[2]
+   n = dim(x)[3]
+   if (n.pc == 0)
+   {
+      GPAout = procGPA(x = x, scale = TRUE, reflect = FALSE, tangentcoords = "partial", distances = FALSE)
+      spheredata = matrix(NA, k * m, n)
+      for (i in 1:n)
+      {
+         spheredata[ , i] = c(GPAout$rotated[ , , i])
+      }
+      pns.out = pns(x = spheredata, sphere.type = sphere.type, alpha = alpha, R = R, nlast.small.sphere = nlast.small.sphere)
+      resmat = pns.out$resmat
+      PNS = pns.out$PNS
+      npts = 200
+      prinarc1 = get.prinarc(resmat, PNS, arc = 1, n = npts, boundary.data = FALSE)
+      prinarc2 = get.prinarc(resmat, PNS, arc = 2, n = npts, boundary.data = FALSE)
+      prinarc1.ar = array(NA, c(k, m, npts))
+      prinarc2.ar = array(NA, c(k, m, npts))
+      for (i in 1:npts)
+      {
+         prinarc1.ar[ , , i] = matrix(prinarc1[ , i], nrow = k)
+         prinarc2.ar[ , , i] = matrix(prinarc2[ , i], nrow = k)
+      }
+      scores.prinarc1 = shape.pcscores.partial(PCAout = GPAout, x = prinarc1.ar)
+      scores.prinarc2 = shape.pcscores.partial(PCAout = GPAout, x = prinarc2.ar)
+      out = pns.out
+      out$GPAout = GPAout
+      out$scores.prinarc1 = scores.prinarc1
+      out$scores.prinarc2 = scores.prinarc2
+   } else {
+      pns.out = pns4pc(x = x, sphere.type = sphere.type, alpha = alpha, R = R, nlast.small.sphere = nlast.small.sphere, n.pc = n.pc)
+      GPAout = pns.out$GPAout
+      resmat = pns.out$resmat
+      PNS = pns.out$PNS
+      npts = 200
+      prinarc1 = get.prinarc(resmat, PNS, arc = 1, n = npts, boundary.data = FALSE)
+      prinarc2 = get.prinarc(resmat, PNS, arc = 2, n = npts, boundary.data = FALSE)
+      scores.prinarc1 = matrix(NA, npts, n.pc)
+      scores.prinarc2 = matrix(NA, npts, n.pc)
+      for (g in 1:npts)
+      {
+         size1 = acos(prinarc1[1, g])
+         size2 = acos(prinarc2[1, g])
+         scores.prinarc1[g, ] = prinarc1[2:(n.pc + 1), g] / (sin(size1) / size1)
+         scores.prinarc2[g, ] = prinarc2[2:(n.pc + 1), g] / (sin(size2) / size2)
+      }
+      out = pns.out
+      out$scores.prinarc1 = scores.prinarc1
+      out$scores.prinarc2 = scores.prinarc2
+   }
+   return(out)
+}
+
+rotMat = function(b, a = NULL, alpha = NULL)
+{
+   if (is.matrix(b))
+   {
+      if (min(dim(b)) == 1)
+      {
+         b = c(b)
+      } else {
+         stop("Error: b should be a unit vector.")
+      }
+   }
+   d = length(b)
+   b = b / norm(b, type = "2")
+
+   if (is.null(a) & is.null(alpha))
+   {
+      a = c(rep(0, d - 1), 1)
+      alpha = acos(sum(a * b))
+   } else if (!is.null(a) & is.null(alpha)) {
+      alpha = acos(sum(a * b))
+   } else if (is.null(a) & !is.null(alpha)) {
+      a = c(rep(0, d - 1), 1)
+   }
+   if (abs(sum(a * b) - 1) < 1e-15)
+   {
+      rot = diag(d)
+      return(rot)
+   }
+   if (abs(sum(a * b) + 1) < 1e-15)
+   {
+      rot = -diag(d)
+      return(rot)
+   }
+   c = b - a * sum(a * b)
+   c = c / norm(c, type = "2")
+   A = a %*% t(c) - c %*% t(a)
+   rot = diag(d) + sin(alpha) * A + (cos(alpha) - 1) * (a %*% t(a) + c %*% t(c))
+   return(rot)
+}
+
+ExpNPd = function(x)
+{
+   if (is.vector(x))
+   {
+      x = as.matrix(x)
+   }
+   d = nrow(x)
+   nv = sqrt(apply(x^2, 2, sum))
+   Exppx = rbind(matrix(rep(sin(nv) / nv, d), nrow = d, byrow = T) * x, cos(nv))
+   Exppx[ , nv < 1e-16] = repmat(matrix(c(rep(0, d), 1)), 1, sum(nv < 1e-16))
+   return(Exppx)
+}
+
+LogNPd = function(x)
+{
+   n = ncol(x)
+   d = nrow(x)
+   scale = acos(x[d, ]) / sqrt(1 - x[d, ]^2)
+   scale[is.nan(scale)] = 1
+   Logpx = repmat(t(scale), d - 1, 1) * x[-d, ]
+   return(Logpx)
+}
+
+objfn = function(center, r, x)
+{
+   return(mean((acos(t(center) %*% x) - r)^2))
+}
+
+getSubSphere = function(x, geodesic = "small")
+{
+   svd.x = svd(x)
+   initialCenter = svd.x$u[ , ncol(svd.x$u)]
+   c0 = initialCenter
+   TOL = 1e-10
+   cnt = 0
+   err = 1
+   n = ncol(x)
+   d = nrow(x)
+   Gnow = 1e+10
+   while (err > TOL)
+   {
+      c0 = c0 / norm(c0, type = "2")
+      rot = rotMat(c0)
+      TpX = LogNPd(rot %*% x)
+      fit = sphereFit(x = TpX, initialCenter = rep(0, d - 1), geodesic = geodesic)
+      newCenterTp = fit$center
+      r = fit$r
+      if (r > pi)
+      {
+         r = pi / 2
+         svd.TpX = svd(TpX)
+         newCenterTp = svd.TpX$u[ , ncol(svd.TpX$u)] * pi / 2
+      }
+      newCenter = ExpNPd(newCenterTp)
+      center = solve(rot, newCenter)
+      Gnext = objfn(center, r, x)
+      err = abs(Gnow - Gnext)
+      Gnow = Gnext
+      c0 = center
+      cnt = cnt + 1
+      if (cnt > 30)
+      {
+         break
+      }
+   }
+   i1save = list()
+   i1save$Gnow = Gnow
+   i1save$center = center
+   i1save$r = r
+   U = princomp(t(x))$loadings[ , ]
+   initialCenter = U[ , ncol(U)]
+   c0 = initialCenter
+   TOL = 1e-10
+   cnt = 0
+   err = 1
+   n = ncol(x)
+   d = nrow(x)
+   Gnow = 1e+10;
+   while (err > TOL)
+   {
+      c0 = c0 / norm(c0, type = "2")
+      rot = rotMat(c0)
+      TpX = LogNPd(rot %*% x)
+      fit = sphereFit(x = TpX, initialCenter = rep(0, d - 1), geodesic = geodesic)
+      newCenterTp = fit$center
+      r = fit$r
+      if (r > pi)
+      {
+         r = pi / 2
+         svd.TpX = svd(TpX)
+         newCenterTp = svd.TpX$u[ , ncol(svd.TpX$u)] * pi / 2
+      }
+      newCenter = ExpNPd(newCenterTp)
+      center = solve(rot, newCenter)
+      Gnext = objfn(center, r, x)
+      err = abs(Gnow - Gnext)
+      Gnow = Gnext
+      c0 = center
+      cnt = cnt + 1
+      if (cnt > 30)
+      {
+         break
+      }
+   }
+   if (i1save$Gnow == min(Gnow, i1save$Gnow))
+   {
+      center = i1save$center
+      r = i1save$r
+   }
+   if (r > pi / 2)
+   {
+      center = -center
+      r = pi - r
+   }
+   return(list(center = c(center), r = r))
+}
+
+LRTpval = function(resGREAT, resSMALL, n)
+{
+   chi2 = max(n * log(sum(resGREAT^2) / sum(resSMALL^2)), 0)
+   return(pchisq(q = chi2, df = 1, lower.tail = FALSE))
+}
+
+vMFtest = function(x, R = 100)
+{
+   d = nrow(x)
+   n = ncol(x)
+   sumx = apply(x, 1, sum)
+   rbar = norm(sumx, "2") / n
+   muMLE = sumx / norm(sumx, "2")
+   kappaMLE = (rbar * d - rbar^3) / (1 - rbar^2)
+   sp = getSubSphere(x = x, geodesic = "small")
+   center.s = sp$center
+   r.s = sp$r
+   radialdistances = acos(t(center.s) %*% x)
+   xi_sample = mean(radialdistances) / sd(radialdistances)
+   xi_vec = rep(0, R)
+   for (r in 1:R)
+   {
+      rdata = randvonMisesFisherm(d, n, kappaMLE)
+      sp = getSubSphere(x = rdata, geodesic = "small")
+      center.s = sp$center
+      r.s = sp$r
+      radialdistances = acos(t(center.s) %*% rdata)
+      xi_vec[r] = mean(radialdistances) / sd(radialdistances)
+   }
+   pvalue = mean(xi_vec > xi_sample)
+   return(pvalue)
+}
+
+geodmeanS1 = function(theta)
+{
+   n = length(theta)
+   meancandi = mod(mean(theta) + 2 * pi * (0:(n - 1)) / n, 2 * pi)
+   theta = mod(theta, 2 * pi)
+   geodvar = rep(0, n)
+   for (i in 1:n)
+   {
+      v = meancandi[i]
+      dist2 = apply(cbind((theta - v)^2, (theta - v + 2 * pi)^2, (v - theta + 2 * pi)^2), 1, min)
+      geodvar[i] = sum(dist2)
+   }
+   m = min(geodvar)
+   ind = which.min(geodvar)
+   geodmean = mod(meancandi[ind], 2 * pi)
+   geodvar = geodvar[ind] / n
+   return(list(geodmean = geodmean, geodvar = geodvar))
+}
+
+PNSe2s = function(resmat, PNS)
+{
+   dm = nrow(resmat)
+   n = ncol(resmat)
+   NSOrthaxis = rev(PNS$orthaxis[1:(dm - 1)])
+   NSradius = flipud0(matrix(PNS$dist, ncol = 1))
+   geodmean = PNS$orthaxis[[dm]]
+   res = resmat / repmat(flipud0(matrix(PNS$radii, ncol = 1)), 1, n)
+   T = t(rotMat(NSOrthaxis[[1]])) %*%
+       rbind(repmat(sin(NSradius[1] + matrix(res[2, ], nrow = 1)), 2, 1) *
+                rbind(cos(geodmean + res[1, ]), sin(geodmean + res[1, ])),
+             cos(NSradius[1] + res[2, ]))
+   if (dm > 2)
+   {
+      for (i in 1:(dm - 2))
+      {
+         T = t(rotMat(NSOrthaxis[[i + 1]])) %*%
+             rbind(repmat(sin(NSradius[i + 1] + matrix(res[i + 2, ], nrow = 1)), 2 + i, 1) * T,
+                   cos(NSradius[i + 1] + res[i + 2, ]))
+      }
+   }
+   if (!is.null(PNS$basisu))
+   {
+      T = PNS$basisu %*% T
+   }
+   return(T)
+}
+
+PNSs2e = function(spheredata, PNS)
+{
+   if (nrow(spheredata) != length(PNS$mean))
+   {
+      cat(" Error from PNSs2e() \n")
+      cat(" Dimensions of the sphere and PNS decomposition do not match")
+      return(NULL)
+   }
+   if (!is.null(PNS$basisu))
+   {
+      spheredata = t(PNS$basisu) %*% spheredata
+   }
+   kk = nrow(spheredata)
+   n = ncol(spheredata)
+   Res = matrix(0, kk - 1, n)
+   currentSphere = spheredata
+   for (i in 1:(kk - 2))
+   {
+      v = PNS$orthaxis[[i]]
+      r = PNS$dist[i]
+      res = acos(t(v) %*% currentSphere) - r
+      Res[i, ] = res
+      NestedSphere = rotMat(v) %*% currentSphere
+      currentSphere = as.matrix(NestedSphere[1:(kk - i), ]) /
+                      repmat(matrix(sqrt(1 - NestedSphere[nrow(NestedSphere), ]^2), nrow = 1), kk - i, 1)
+   }
+   S1toRadian = atan2(currentSphere[2, ], currentSphere[1, ])
+   devS1 = mod(S1toRadian - rev(PNS$orthaxis)[[1]] + pi, 2 * pi) - pi
+   Res[kk - 1, ] = devS1
+   EuclidData = flipud0(repmat(PNS$radii, 1, n) * Res)
+   return(EuclidData)
+}
+
+randvonMisesFisherm = function(m, n, kappa, mu = NULL)
+{
+   if (is.null(mu))
+   {
+      muflag = FALSE
+   } else {
+      muflag = TRUE
+   }
+   if (m < 2)
+   {
+      print("Message from randvonMisesFisherm(): dimension m must be > 2")
+      print("Message from randvonMisesFisherm(): Set m to be 2")
+      m = 2
+   }
+   if (kappa < 0)
+   {
+      print("Message from randvonMisesFisherm(): kappa must be >= 0")
+      print("Message from randvonMisesFisherm(): Set kappa to be 0")
+      kappa = 0
+   }
+   b = (-2 * kappa + sqrt(4 * kappa^2 + (m - 1)^2)) / (m - 1)
+   x0 = (1 - b) / (1 + b)
+   c = kappa * x0 + (m - 1) * log(1 - x0^2)
+   nnow = n; w = c()
+   while (TRUE)
+   {
+      ntrial = max(round(nnow * 1.2), nnow + 10)
+      Z = rbeta(n = ntrial, shape1 = (m - 1) / 2, shape2 = (m - 1) / 2)
+      U = runif(ntrial)
+      W = (1 - (1 + b) * Z) / (1 - (1 - b) * Z)
+
+      indicator = kappa * W + (m - 1) * log(1 - x0 * W) - c >= log(U)
+      if (sum(indicator) >= nnow)
+      {
+         w1 = W[indicator]
+         w = c(w, w1[1:nnow])
+         break
+      } else {
+         w = c(w, W[indicator])
+         nnow = nnow - sum(indicator)
+      }
+   }
+   V = UNIFORMdirections(m - 1, n)
+   X = rbind(repmat(sqrt(1 - matrix(w, nrow = 1)^2), m - 1, 1) * V, matrix(w, nrow = 1))
+   if (muflag)
+   {
+      mu = mu / norm(mu, "2")
+      X = t(rotMat(mu)) %*% X
+   }
+   return(X)
+}
+
+UNIFORMdirections = function(m, n)
+{
+   V = matrix(0, m, n)
+   nr = matrix(rnorm(m * n), nrow = m)
+   for (i in 1:n)
+   {
+      while (TRUE)
+      {
+         ni = sum(nr[ , i]^2)
+         if (ni < 1e-10)
+         {
+            nr[ , i] = rnorm(m)
+         } else {
+            V[ , i] = nr[ , i] / sqrt(ni)
+            break
+         }
+      }
+   }
+   return(V)
+}
+
+trans.subsphere = function(x, center)
+{
+   return(repmat(1 / sqrt(1 - (t(center) %*% x)^2), length(center) - 1, 1) *
+          (rotMat(center)[-length(center), ] %*% x))
+}
+
+get.prinarc.value = function(PNS, arc, res)
+{
+   d = length(PNS$orthaxis)
+   n = length(res)
+   prinarc = matrix(NA, d + 1, n)
+   for (g in 1:n)
+   {
+      newres = matrix(0, d, 1)
+      newres[arc] = res[g]
+      T = PNSe2s(newres, PNS)
+      prinarc[ , g] = T
+   }
+   return(prinarc)
+}
+
+get.prinarc = function(resmat, PNS, arc, n, boundary.data = FALSE)
+{
+   d = nrow(resmat)
+   if (boundary.data)
+   {
+      mn = min(resmat[arc, ])
+      mx = max(resmat[arc, ])
+   } else {
+      mn = -pi * tail(PNS$radii, arc)[1]
+      mx = pi * tail(PNS$radii, arc)[1]
+   }
+   prinarcgrid = seq(mn, mx, length = n)
+   prinarc = matrix(NA, d + 1, n)
+   for (g in 1:n)
+   {
+      newres = matrix(0, d, 1)
+      newres[arc] = prinarcgrid[g]
+      T = PNSe2s(newres, PNS)
+      prinarc[ , g] = T
+   }
+   return(prinarc)
+}
+
+get.prinarc.subsphere = function(resmat, PNS, arc, n, subsphere = arc, boundary.data = FALSE)
+{
+   if (subsphere < arc)
+   {
+      stop("Error: subsphere >= arc.")
+   }
+   if (subsphere < 1)
+   {
+      stop("Error: subsphere >= 1.")
+   }
+   prinarc = get.prinarc(resmat = resmat, PNS = PNS, arc = arc, n = n, boundary.data = boundary.data)
+   d = nrow(resmat)
+   prinarc.sub = prinarc
+   if (subsphere < d)
+   {
+      for (i in 1:(d - subsphere))
+      {
+         prinarc.sub = trans.subsphere(x = prinarc.sub, center = PNS$orthaxis[[i]])
+      }
+   }
+   return(prinarc.sub)
+}
+
+get.data.subsphere = function(resmat, PNS, x, subsphere)
+{
+   if (subsphere < 1)
+   {
+      stop("Error: subsphere >= 1.")
+   }
+   d = nrow(resmat)
+   x.sub = x
+   if (subsphere < d)
+   {
+      for (i in 1:(d - subsphere))
+      {
+         x.sub = trans.subsphere(x = x.sub, center = PNS$orthaxis[[i]])
+      }
+   }
+   return(x.sub)
+}
+
+mod = function(x, y)
+{
+   return(x %% y)
+}
+
+repmat = function(x, m, n)
+{
+   return(kronecker(matrix(1, m, n), x))
+}
+
+flipud0 = function(x)
+{
+   return(apply(x, 2, rev))
+}
+
+sphere.obj = function(center, x, is.greatCircle)
+{
+   di = sqrt(apply((x - repmat(matrix(center, ncol = 1), 1, ncol(x)))^2, 2, sum))
+   if (is.greatCircle)
+   {
+      r = pi / 2
+   } else {
+      r = mean(di)
+   }
+   sum((di - r)^2)
+}
+
+sphere.res = function(center, x, is.greatCircle)
+{
+   center = c(center)
+   xmc = x - center
+   di = sqrt(apply(xmc^2, 2, sum))
+   if (is.greatCircle)
+   {
+      r = pi / 2
+   } else {
+      r = mean(di)
+   }
+   (di - r)
+}
+
+sphere.jac = function(center, x, is.greatCircle)
+{
+   center = c(center)
+   xmc = x - center
+   di = sqrt(apply(xmc^2, 2, sum))
+   di.vj = -xmc / repmat(matrix(di, nrow = 1), length(center), 1)
+   if (is.greatCircle)
+   {
+      c(t(di.vj))
+   } else {
+      r.vj = apply(di.vj, 1, mean)
+      c(t(di.vj - repmat(matrix(r.vj, ncol = 1), 1, ncol(x))))
+   }
+}
+
+sphereFit = function(x, initialCenter = NULL, geodesic = "small")
+{
+   if (is.null(initialCenter))
+   {
+      initialCenter = apply(x, 1, mean)
+   }
+   op = nls.lm(par = initialCenter, fn = sphere.res, jac = sphere.jac,
+               x = x, is.greatCircle = ifelse(geodesic == "great", TRUE, FALSE),
+               control = nls.lm.control(maxiter = 300))
+   center = coef(op)
+   di = sqrt(apply((x - repmat(matrix(center, ncol = 1), 1, ncol(x)))^2, 2, sum))
+   if (geodesic == "great")
+   {
+      r = pi / 2
+   } else {
+      r = mean(di)
+   }
+
+   list(center = center, r = r)
+}
+
+tr = function(x)
+{
+   return(sum(diag(x)))
+}
+
+Enormalize = function(x)
+{
+   return(x / Enorm(x))
+}
+
+sphere2pcscore = function(x)
+{
+   n = nrow(x)
+   p = ncol(x)
+   scores = matrix(NA, n, p - 1)
+   for (i in 1:n)
+   {
+      size = acos(x[i, 1])
+      scores[i, ] = (size / sin(size)) * x[i, 2:p]
+   }
+   return(scores)
+}
+
+pcscore2sphere = function(n.pc, X.hat, S, Tan, V)
+{
+   d = nrow(Tan)
+   n = ncol(Tan)
+   W = matrix(NA, d, n)
+   for (i in 1:n)
+   {
+      W[ , i] = acos(tr(S[ , , i] %*% t(X.hat))) * Tan[ , i] / sqrt(sum(Tan[ , i]^2))
+   }
+   lambda = matrix(NA, n, d)
+   for (i in 1:n)
+   {
+      for (j in 1:d)
+      {
+         lambda[i, j] = sum(W[ , i] * V[ , j])
+      }
+   }
+   U = matrix(0, n, d)
+   for (i in 1:n)
+   {
+      for (j in 1:n.pc)
+      {
+         U[i, ] = U[i, ] + lambda[i, j] * V[ , j]
+      }
+   }
+   S.star = matrix(NA, n, n.pc + 1)
+   for (i in 1:n)
+   {
+      U.norm = sqrt(sum(U[i, ]^2))
+      S.star[i, ] = c(cos(U.norm),
+                      sin(U.norm) / U.norm * lambda[i, 1:n.pc])
+   }
+   return(S.star)
+}
+
+pc2sphere = function(x, n.pc)
+{
+   k = dim(x)[1]
+   m = dim(x)[2]
+   n = dim(x)[3]
+   if (n < ((k - 1) * m))
+   {
+      stop("Error: n must be >= (k - 1) * m.")
+   }
+   GPAout = procGPA(x = x, scale = TRUE, reflect = FALSE, tangentcoords = "partial", distances = FALSE)
+   cat("First ", n.pc, " principal components explain ",
+       round(sum(GPAout$percent[1:n.pc])), "% of total variance. \n", sep = "")
+   H = defh(k - 1)
+   X.hat = H %*% GPAout$mshape
+   S = array(NA, c(k - 1, m, n))
+   for (i in 1:n)
+   {
+      S[ , , i] = H %*% GPAout$rotated[ , , i]
+   }
+   T.c = GPAout$tan - apply(GPAout$tan, 1, mean)
+   out = pcscore2sphere(n.pc = n.pc, X.hat = X.hat, S = S, Tan = T.c, V = GPAout$pcar)
+   return(list(spheredata = out, GPAout = GPAout))
+}
+
+rot.mat = function(Y, X, reflect = FALSE, center = TRUE)
+{
+   svd.out = svd(t(X) %*% Y)
+   R = svd.out$u %*% t(svd.out$v)
+   if (!reflect)
+   {
+      if (det(R) < 0)
+      {
+         u = svd.out$u
+         v = svd.out$v
+         if (det(u) < 0)
+         {
+            u[ , dim(u)[2]] = -u[ , dim(u)[2]]
+         } else if (det(v) < 0) {
+            v[ , dim(v)[2]] = -v[ , dim(v)[2]]
+         }
+         R = u %*% t(v)
+      }
+   }
+   return(R)
+}
+
+Procrustes.dist.full = function(x1, x2)
+{
+   m = ncol(x1)
+   z1 = preshape(x1)
+   z2 = preshape(x2)
+   Q = t(z1) %*% z2 %*% t(z2) %*% z1
+   ev = eigen(Q)$values
+   sign = ifelse(det(t(z1) %*% z2) >= 0, 1, -1)
+   dF = sqrt(abs(1 - sum(sqrt(abs(ev[1:(m - 1)])), sign * sqrt(abs(ev[m])))^2))
+   R = rot.mat(Y = z2, X = z1, reflect = FALSE, center = FALSE)
+   scale = sum(svd(t(z1) %*% z2)$d)
+   return(list(dF = dF, R = R, scale = scale))
+}
+
+tangent.coords.partial = function(x, p)
+{
+   k = nrow(x)
+   m = ncol(x)
+   if (abs(norm(p, "F") - 1) > 1e-15)
+   {
+      print("||p|| is not 1. Normalised one is used.")
+      p = Enormalize(p)
+   }
+   tmp = Procrustes.dist.full(x, p)
+   R = tmp$R
+   scale = tmp$scale
+   pre.p = preshape(p)
+   pre.x = preshape(x)
+   ident = diag(k * m - m)
+   tan = (ident - matrix(pre.p) %*% t(c(pre.p))) %*% c(pre.x %*% R)
+   tan.scale = (ident - matrix(pre.p) %*% t(c(pre.p))) %*% c(pre.x %*% R * scale)
+   return(list(tan = c(tan), tan.scale = c(tan.scale), R = R, scale = scale))
+}
+
+shape.pcscores = function(PCAout, x, tangentcoords = "partial")
+{
+   if (tangentcoords == "partial")
+   {
+      if (abs(norm(PCAout$mshape, "F") - 1) > 1e-15)
+      {
+         print("||PCAout$mshape|| is not 1. Normalised one is used.")
+         mshape = Enormalize(PCAout$mshape)
+      } else {
+         mshape = PCAout$mshape
+      }
+      if (abs(norm(x, "F") - 1) > 1e-15)
+      {
+         print("||x|| is not 1. Normalised one is used.")
+         x = Enormalize(x)
+      }
+      opa.out = procOPA(mshape, x, scale = FALSE)
+      matched = opa.out$Bhat
+      tan.out = tangent.coords.partial(matched, mshape)
+      mean.tan = apply(PCAout$tan, 1, mean)
+      scores = t(tan.out$tan - mean.tan) %*% PCAout$pcar
+      scores.scale = t(tan.out$tan.scale - mean.tan) %*% PCAout$pcar
+      return(list(rotated = matched,
+                  tan = tan.out$tan,
+                  tan.scale = tan.out$tan.scale,
+                  scores = c(scores),
+                  scores.scale = c(scores.scale)))
+   }
+}
+
+shape.pcscores.partial = function(PCAout, x)
+{
+   n = dim(x)[3]
+   scores = c()
+   for (i in 1:n)
+   {
+      s = shape.pcscores(PCAout, x[ , , i], tangentcoords = "partial")
+      scores = rbind(scores, s$scores)
+   }
+   return(scores)
+}
+
+plotshapes3d.pns = function(x, type = "p", col = "black", size = 5, aspect = "iso",
+                         joinline = TRUE, col.joinline = "#d4d2d2", lwd.joinline = 0.5,
+                         tick = FALSE, labels.tick = FALSE,
+                         xlab = "", ylab = "", zlab = "")
+{
+   k = dim(x)[1]
+   n = dim(x)[3]
+   aa = c()
+   bb = c()
+   cc = c()
+   for (i in 1:n)
+   {
+      aa = c(aa, x[ , 1, i])
+      bb = c(bb, x[ , 2, i])
+      cc = c(cc, x[ , 3, i])
+   }
+   xlim = range(aa)
+   ylim = range(bb)
+   zlim = range(cc)
+   plot3d(x[ , , 1], type = "n", xlab = "", ylab = "", zlab = "",
+          box = FALSE, axes = FALSE, aspect = aspect, xlim = xlim, ylim = ylim, zlim = zlim)
+   for (i in 1:n)
+   {
+      plot3d(x[ , , i], type = type, col = col, size = size, add = TRUE)
+   }
+   if (tick)
+   {
+      axis3d(edge = 'x', labels = labels.tick, tick = TRUE,
+             pos = c(NA, 0, 0), cex = 0.6, lwd = 0.5)
+      axis3d(edge = 'y', labels = labels.tick, tick = TRUE,
+             pos = c(0, NA, 0), cex = 0.6, lwd = 0.5)
+      axis3d(edge = 'z', labels = labels.tick, tick = TRUE,
+             pos = c(0, 0, NA), cex = 0.6, lwd = 0.5)
+   } else {
+   }
+   r = cbind(xlim, ylim, zlim)
+   pos = r[2, ] + apply(r, 2, diff) / 20
+   text3d(pos[1], 0, 0, texts = xlab, cex = 0.8)
+   text3d(0, pos[2], 0, texts = ylab, cex = 0.8)
+   text3d(0, 0, pos[3], texts = zlab, cex = 0.8)
+   if (joinline)
+   {
+      for (i in 1:n)
+      {
+         lines3d(x[ , , i], col = col.joinline, lwd = lwd.joinline)
+      }
+   }
+}
+
+Plot3D = function(x, type = "s", col = "black", size = 1.2, aspect = "iso",
+                  joinline = FALSE, col.joinline = "#d4d2d2", lwd.joinline = 0.5,
+                  tick = TRUE, tick.boundary = FALSE, labels.tick = TRUE,
+                  xlab = "", ylab = "", zlab = "")
+{
+   n = nrow(x)
+   plot3d(x, type = "n", xlab = "", ylab = "", zlab = "",
+          box = FALSE, axes = FALSE, aspect = aspect)
+   plot3d(x, type = type, col = col, size = size, add = TRUE)
+   if (tick)
+   {
+      axis3d(edge = 'x', labels = labels.tick, tick = TRUE,
+             pos = c(NA, 0, 0), cex = 0.6, lwd = 0.5)
+      axis3d(edge = 'y', labels = labels.tick, tick = TRUE,
+             pos = c(0, NA, 0), cex = 0.6, lwd = 0.5)
+      axis3d(edge = 'z', labels = labels.tick, tick = TRUE,
+             pos = c(0, 0, NA), cex = 0.6, lwd = 0.5)
+   }
+   if (tick.boundary)
+   {
+      tks = pretty(x[ , 1], n = 10)
+      axis3d(edge = 'x', labels = labels.tick, tick = TRUE,
+             at = c(tks[1], tks[length(tks)]),
+             pos = c(NA, 0, 0), cex = 0.6, lwd = 0.5)
+      tks = pretty(x[ , 2], n = 10)
+      axis3d(edge = 'y', labels = labels.tick, tick = TRUE,
+             at = c(tks[1], tks[length(tks)]),
+             pos = c(0, NA, 0), cex = 0.6, lwd = 0.5)
+      tks = pretty(x[ , 3], n = 10)
+      axis3d(edge = 'z', labels = labels.tick, tick = TRUE,
+             at = c(tks[1], tks[length(tks)]),
+             pos = c(0, 0, NA), cex = 0.6, lwd = 0.5)
+   }
+   r = apply(x, 2, range)
+   pos = r[2, ] + apply(r, 2, diff) / 20
+   text3d(pos[1], 0, 0, texts = xlab, cex = 0.8)
+   text3d(0, pos[2], 0, texts = ylab, cex = 0.8)
+   text3d(0, 0, pos[3], texts = zlab, cex = 0.8)
+   if (joinline)
+   {
+      lines3d(x, col = col.joinline, lwd = lwd.joinline)
+   }
+}
+
+col2RGB = function(col, alpha = 255)
+{
+   n = length(col)
+   out = c()
+   for (i in 1:n)
+   {
+      out[i] = rgb(red = col2rgb(col[i])[1],
+                   green = col2rgb(col[i])[2],
+                   blue = col2rgb(col[i])[3],
+                   alpha = alpha,
+                   maxColorValue = 255)
+   }
+   return(out)
+}
+
+project.subsphere = function(x, center, r)
+{
+   n = ncol(x)
+   d = nrow(x)
+   x.proj = matrix(NA, d, n)
+   for (i in 1:n)
+   {
+      rho = acos(sum(x[ , i] * center))
+      x.proj[ , i] = (sin(r) * x[ , i] + sin(rho - r) * center) / sin(rho)
+   }
+   return(x.proj)
+}
+
+
+
+
+
 ##### Penalised Euclidean Distance Regression
 
 ped<-function(X,Y,method=c("AIC")){

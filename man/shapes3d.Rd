@@ -21,8 +21,8 @@ are coloured in that order.}
 \value{
 None
 }
-\references{Dryden, I.L. and Mardia, K.V. (1998)
-Statistical Shape Analysis. Wiley, Chichester.
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. 
 
 }
 \author{Ian Dryden}

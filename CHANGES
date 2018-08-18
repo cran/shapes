@@ -1,7 +1,12 @@
+(future release) 1.2.4 
+
+Added Principal Nested Spheres (pns)
+Added Principal Nested Shape Spaces using PCA (pns4pc)
+Updated some references in help files
+
 1.2.3
 
-Minor adjustment to Penalized Euclidean Distance regression function, inlcuding a different name  ped()
-
+Minor adjustment to Penalized Euclidean Distance regression function, including a different name  ped()
 
 1.2.2
 

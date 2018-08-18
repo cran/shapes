@@ -33,8 +33,8 @@ Dryden, I. L. (1991). Discussion to `Procrustes methods in the statistical analy
 of shape' by C.R. Goodall. Journal of the Royal Statistical Society, Series B,
 53:327-328.
 
-Dryden, I.L. and Mardia, K.V. (1998). Statistical 
-Shape Analysis. Wiley, Chichester. 
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester. 
 
 Kent, J. T. (1992). New directions in shape analysis. In Mardia, K. V., editor, The
 Art of Statistical Science, pages 115-127. Wiley, Chichester. 
@@ -48,7 +48,7 @@ Biometrika, 76:271-282.
 
 \examples{
 
-#2D example : female and male Gorillas (cf. Dryden and Mardia, 1998)
+#2D example : female and male Gorillas (cf. Dryden and Mardia, 2016)
 
 data(gorf.dat)
 frechet(gorf.dat[,,1:4],mean="intrinsic")

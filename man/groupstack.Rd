@@ -29,14 +29,14 @@ is the number of dimensions, and n is the sample size. }
 \item{x}{The combined array of all configurations}
 \item{groups}{The group labels (integers)}                             
 }
-\references{Dryden, I.L. and Mardia, K.V. (1998). Statistical
-Shape Analysis, Wiley, Chichester.}
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester.}
 \author{Ian Dryden}
 \seealso{procGPA}                                      
 
 \examples{
 
-#2D example : female and male Gorillas (cf. Dryden and Mardia, 1998)
+#2D example : female and male Gorillas (cf. Dryden and Mardia, 2016)
 
 data(gorf.dat)
 data(gorm.dat)

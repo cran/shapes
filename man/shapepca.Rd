@@ -41,8 +41,8 @@ If a vector is given then the points are colored in that order.}
 \value{
  No value is returned
 }
-\references{Dryden, I.L. and Mardia, K.V. (1998) Statistical Shape 
-Analysis. Wiley, Chichester.}
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 7.}
 \author{Ian Dryden}
 
 \seealso{procGPA}

@@ -47,8 +47,8 @@ Bookstein, F.L. (1989). Principal  warps: thin-plate
        IEEE Transactions on Pattern Analysis and Machine Intelligence,
    11, 567--585. 
 
-Dryden, I.L. and Mardia, K.V. (1998) Statistical Shape 
-Analysis. Wiley, Chichester. Chapter 10.
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 12.
 }
 \author{Ian Dryden}
 

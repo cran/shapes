@@ -22,7 +22,8 @@ where k = number of landmarks and m = no of dimensions}
 \value{
   The distance between the two configurations.}
 \references{
- Dryden, I.L. and Mardia, K.V. (1998). Statistical shape analysis. Wiley, Chichester. 
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester.
 }
 \seealso{procOPA,procGPA}
 \examples{

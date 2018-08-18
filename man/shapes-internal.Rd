@@ -1,4 +1,13 @@
 \name{shapes-internal}
+  \alias{Enormalize} \alias{ExpNPd} \alias{LRTpval} \alias{LogNPd} \alias{PNSe2s} \alias{PNSs2e} \alias{Plot3D}
+  \alias{Procrustes.dist.full} \alias{UNIFORMdirections} \alias{col2RGB} \alias{flipud0}
+  \alias{geodmeanS1} \alias{get.data.subsphere} \alias{get.prinarc}
+  \alias{get.prinarc.subsphere} \alias{get.prinarc.value} \alias{getSubSphere} \alias{mod}
+  \alias{objfn} \alias{pc2sphere} \alias{pcscore2sphere} \alias{plotshapes3d.pns}  \alias{pns.pc}
+   \alias{project.subsphere} \alias{randvonMisesFisherm} \alias{repmat} \alias{rot.mat}
+  \alias{rotMat} \alias{shape.pcscores} \alias{shape.pcscores.partial} \alias{sphere.jac}
+  \alias{sphere.obj} \alias{sphere.res} \alias{sphere2pcscore} \alias{sphereFit}
+  \alias{tangent.coords.partial} \alias{tr} \alias{trans.subsphere} \alias{vMFtest}
 \alias{ped}
 \alias{pedreg}
 \alias{sooty.dat}

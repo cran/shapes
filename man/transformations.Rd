@@ -23,14 +23,14 @@ is the number of dimensions, and n is the sample size. }
 \item{scale}{The scale parameters}                             
 \item{rotation}{The rotation parameters. These are the rotations between the individuals after they have both been centred.} 
 }
-\references{Dryden, I.L. and Mardia, K.V. (1998). Statistical
-Shape Analysis, Wiley, Chichester.}
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester.}
 \author{Ian Dryden}
 \seealso{procGPA}                                      
 
 \examples{
 
-#2D example : female and male Gorillas (cf. Dryden and Mardia, 1998)
+#2D example : female and male Gorillas (cf. Dryden and Mardia, 2016)
 
 data(gorf.dat)
 

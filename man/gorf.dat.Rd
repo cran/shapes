@@ -9,8 +9,8 @@ in 2 dimensions, 30 individuals
 An array of dimension 8 x 2 x 30
 }
 \source{
-Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester. p317 
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 1.
 
 O'Higgins, P. and Dryden, I. L. (1993). Sexual dimorphism in
 hominoids: further studies of craniofacial shape differences in

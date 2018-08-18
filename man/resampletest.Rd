@@ -18,12 +18,12 @@ Up to four test statistics are calculated:
 lambda : the asymptotically pivotal statistic $lambda_min$ from Amaral et al. (2007), equ.(14),(16)
   (m=2 only)
 
-H : Hotelling $T^2$ statistic (see Amaral et al., 2007, equ.(23), Dryden and Mardia, 1998, equ.(7.4))
+H : Hotelling $T^2$ statistic (see Amaral et al., 2007, equ.(23), Dryden and Mardia, 2016, equ.(9.4))
 
 J : James' statistic (see Amaral et al., 2007, equ.(24) )
   (m=2 only)
 
-G : Goodall's F statistic (see Amaral et al., 2007, equ.(25), Dryden and Mardia, 1998, equ.(7.9))
+G : Goodall's F statistic (see Amaral et al., 2007, equ.(25), Dryden and Mardia, 2016, equ.(9.9))
 
 p-values are given based on resampling as well as the usual table based p-values.
 
@@ -71,8 +71,8 @@ procedures are carried out, and the tabular p-values are given only.}
 \references{Amaral, G.J.A., Dryden, I.L. and Wood, A.T.A. (2007) Pivotal bootstrap methods for 
 $k$-sample problems in directional statistics and shape analysis.  Journal of the American Statistical Association.   102, 695-707. 
 
-Dryden, I.L. and Mardia, K.V. (1998) Statistical Shape Analysis,
-Wiley, Chichester. Chapter 7.
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 9.
 
 Goodall, C. R. (1991). Procrustes methods in the statistical analysis
 of shape (with discussion). Journal of the Royal Statistical Society,

@@ -10,9 +10,8 @@ the 3rd and 7th figure.
 \format{
 An array of dimension 12 x 2 x 7
 }
-\source{
-Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester. p17, 42 
+\source{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 1.
 }
 \references{
 Data from Paul O'Higgins (Hull-York Medical School)

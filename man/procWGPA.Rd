@@ -65,8 +65,8 @@ tan}
 $Sigma_k x I_m$ with 
 $Sigma_k$ being the covariance matrix of the landmarks, and the
 cov matrix at each landmark is the identity matrix.}
-\references{Dryden, I.L. and Mardia, K.V. (1998). Statistical 
-Shape Analysis, Wiley, Chichester. 
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester. 
  
 Goodall, C.R. (1991). Procrustes methods in the statistical analysis 
 of shape (with discussion). Journal of the Royal Statistical Society, 
@@ -78,7 +78,7 @@ Series B, 53: 285-339.
 
 \examples{
 
-#2D example : female Gorillas (cf. Dryden and Mardia, 1998)
+#2D example : female Gorillas (cf. Dryden and Mardia, 2016)
 
 data(gorf.dat)
 

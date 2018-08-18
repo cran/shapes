@@ -15,9 +15,8 @@ the number of landmarks, n is the number of observations}
 \item{mshape}{Bookstein mean shape with baseline l1, l2}
 \item{bshpv}{the k x n x 2 array of Bookstein shape variables, including the baseline}
 }
-\references{Dryden, I.L. and Mardia, K.V. (1998) 
-Statistical Shape Analysis. Wiley, Chichester. 
-Chapter 2.
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester. Chapter 2.
 
 Bookstein, F. L. (1986) Size and shape spaces for landmark data in
 two dimensions  (with discussion). Statistical Science, 1:181-242.

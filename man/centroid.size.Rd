@@ -15,8 +15,8 @@ or a sample of configurations.
 Centroid size(s)
 }
 \references{
-Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester. 
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester. 
 }
 \examples{
 data(mice)

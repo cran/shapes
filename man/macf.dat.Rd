@@ -9,8 +9,8 @@ in 3 dimensions, 9 individuals
 An array of dimension 7 x 3 x 9
 }
 \source{
-Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester. p16 
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 1.
 }
 \references{
 Data from Paul O'Higgins (Hull-York Medical School)

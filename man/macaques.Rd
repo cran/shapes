@@ -11,10 +11,8 @@ macaques$x : An array of dimension 7 x 3 x 18
 macaques$group : A factor indicating the sex (`m' for male and `f' for female)
 }
 \source{
-
-
-Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester.
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 1.
 }
 \references{
 Dryden, I. L. and Mardia, K. V. (1993). Multivariate shape analysis. Sankhya Series A, 55, 460-480.

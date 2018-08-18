@@ -17,8 +17,8 @@ apes$group :  Species and sex of each specimen:
              "pongom" 30 male orang utans.
 }
 \source{
-Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester. 
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester. 
 
 O'Higgins, P. and Dryden, I. L. (1993). Sexual dimorphism in
 hominoids: further studies of craniofacial shape differences in

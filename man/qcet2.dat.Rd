@@ -9,8 +9,8 @@ in 2 dimensions, 30 individuals
 An array of dimension 6 x 2 x 30
 }
 \source{
-Dryden, I.L. and Mardia, K.V. (1998). 
-Statistical Shape Analysis, Wiley, Chichester. p313
+Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester. Chapter 1.
 }
 \references{
 http://www.maths.nott.ac.uk/personal/ild/bookdata/qcet2.dat

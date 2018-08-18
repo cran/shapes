@@ -30,8 +30,8 @@ if reflection is allowed)}
 $\|Ahat-Bhat\|^2$}
   \item{rmsd}{rmsd = sqrt(OSS/(km))}
 }
-\references{Dryden, I.L. and Mardia, K.V. (1998). Statistical shape 
-analysis. Wiley, Chichester.} 
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester. Chapter 7.} 
 \author{Ian Dryden}             
 \seealso{procGPA,riemdist,tpsgrid}
 \examples{

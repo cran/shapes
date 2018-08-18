@@ -18,14 +18,14 @@ scaling should be carried out}
  \item{ncv}{Number of canonical variates to display}
 }
 \value{A plot if ncv=2 or 3 and the Canonical Variate Scores} 
-\references{Dryden, I.L. and Mardia, K.V. (1998). Statistical
-Shape Analysis, Wiley, Chichester.}
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with Applications in R (Second Edition). Wiley, Chichester.}
 \author{Ian Dryden}
 \seealso{procGPA}                                      
 
 \examples{
 
-#2D example : female and male apes   (cf. Dryden and Mardia, 1998)
+#2D example : female and male apes   (cf. Dryden and Mardia, 2016)
 
 data(pongof.dat)
 data(pongom.dat) 

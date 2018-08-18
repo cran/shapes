@@ -70,13 +70,13 @@ component.}
 \item{stdscores}{standardised PC scores (each with unit variance) using 
 tan} 
 \item{rawscores}{raw PC scores using tan} 
-\item{rho}{Kendall's Riemannian distance rho to the mean shape}
+\item{rho}{Kendall's Riemannian shape distance rho to the mean shape}
 \item{rmsrho}{root mean square (r.m.s.) of rho} 
 \item{rmsd1}{r.m.s. of full Procrustes distances to the mean shape $d_F$}
 \item{GSS}{Minimized Procrustes sum of squares}
 }
-\references{Dryden, I.L. and Mardia, K.V. (1998). Statistical 
-Shape Analysis, Wiley, Chichester. 
+\references{Dryden, I.L. and Mardia, K.V. (2016). Statistical 
+Shape Analysis, with applications in R (Second Edition). Wiley, Chichester. Chapter 7.
  
 Goodall, C.R. (1991). Procrustes methods in the statistical analysis 
 of shape (with discussion). Journal of the Royal Statistical Society, 
@@ -94,7 +94,7 @@ matrices. Psychometrika, 42, 267-276. }
 
 \examples{
 
-#2D example : female and male Gorillas (cf. Dryden and Mardia, 1998)
+#2D example : female and male Gorillas (cf. Dryden and Mardia, 2016)
 
 data(gorf.dat)
 data(gorm.dat)
