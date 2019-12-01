@@ -16,7 +16,8 @@ where k = number of landmarks and m = no of dimensions}
 }
 \value{
   The Riemannian shape distance rho between the two configurations. 
-Note 0 <= rho <= pi/2 if no reflection invariance} 
+Note 0 <= rho <= pi/2 if no reflection invariance. 
+(for the Riemannian size-and-shape distance use ssriemdist)} 
 \references{
    Kendall, D. G. (1984). 
    Shape manifolds,  Procrustean metrics and complex

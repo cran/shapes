@@ -1,4 +1,12 @@
-(future release) 1.2.4 
+1.2.5
+
+Corrected bug in estcov for method="Power" when exit occurred in some zero
+eigenvalue cases, by including abs(eigenvalue)  
+
+Faster versions of some functions kindly supplied by 
+Gregorio Quintana-Orti and Amelia Simo, University Jaume I, Spain.
+
+1.2.4 
 
 Added Principal Nested Spheres (pns)
 Added Principal Nested Shape Spaces using PCA (pns4pc)
@@ -52,7 +60,7 @@ Several new datasets added
 
 procGPA fixed recently introduced error in reading in complex matrices
 
-procGPA( , scale=FALSE,pcaoutput=FALSE) was still caculating PCA, so
+procGPA( , scale=FALSE,pcaoutput=FALSE) was still calculating PCA, so
                                         this has now been fixed.  
 
 The internal function prcomp1 now uses eigen() rather than svd(), due to some 

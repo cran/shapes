@@ -1,4 +1,46 @@
 \name{shapes-internal}
+\alias{multiply_by_transpose_of_helmert_implicitly} 
+\alias{multiply_by_helmert_implicitly_3d}
+\alias{uji3_centroid.size}
+\alias{uji2_centroid.size}
+\alias{multiply_by_transpose_of_helmert_explicitly} 
+\alias{multiply_by_transpose_of_helmert} 
+\alias{multiply_by_helmert_implicitly}
+\alias{multiply_by_helmert_explicitly}
+\alias{multiply_by_helmert}
+\alias{uji_preshape}
+\alias{uji_centroid.size}
+\alias{uji_defh}
+\alias{uji_Enorm}
+\alias{uji_distProcrustesFull}
+\alias{uji_distProcrustesSizeShape}
+\alias{uji_distCholesky}
+\alias{uji_estSS}
+\alias{uji_estShape}
+\alias{uji_centroid.size.complex}
+\alias{uji_centroid.size.mD}
+\alias{uji_preshape.mD}
+\alias{uji_preshape.mat}
+\alias{uji_tanfigure}
+\alias{uji_tanfigurefull}
+\alias{uji_kendall.shpv}
+\alias{ild_preshape}
+\alias{ild_centroid.size}
+\alias{ild_defh}
+\alias{ild_Enorm}
+\alias{ild_distProcrustesFull}
+\alias{ild_distProcrustesSizeShape}
+\alias{ild_distCholesky}
+\alias{ild_estSS}
+\alias{ild_estShape}
+\alias{ild_centroid.size.complex}
+\alias{ild_centroid.size.mD}
+\alias{ild_preshape.mD}
+\alias{ild_preshape.mat}
+\alias{ild_tanfigure}
+\alias{ild_tanfigurefull}
+\alias{ild_kendall.shpv}
+\alias{ild_preshapetoicon}
   \alias{Enormalize} \alias{ExpNPd} \alias{LRTpval} \alias{LogNPd} \alias{PNSe2s} \alias{PNSs2e} \alias{Plot3D}
   \alias{Procrustes.dist.full} \alias{UNIFORMdirections} \alias{col2RGB} \alias{flipud0}
   \alias{geodmeanS1} \alias{get.data.subsphere} \alias{get.prinarc}
@@ -177,9 +219,6 @@
 \alias{tanfigure}
 \alias{tanfigurefull}
 \alias{tanpreshape}
-\alias{tantofigure}
-\alias{tantofigurefull}
-\alias{tantopreshape}
 \alias{testshapes}
 \alias{vec1}
 \title{Internal function(s)}

@@ -15,13 +15,14 @@ where k = number of landmarks and m = no of dimensions}
  \item{reflect}{ Logical. If reflect = TRUE then reflection invariance is included.}
 }
 \value{
-The Riemannian size-and-shape distance rho between the two configurations. 
+The Riemannian size-and-shape distance d_S between the two configurations. 
+(for the Riemannian shape distance use riemdist)
 } 
 \references{
 Le, H.-L. (1995). Mean size-and-shapes and mean shapes: a geometric point of
 view. Advances in Applied Probability, 27:44-55.
 }
-\seealso{procOPA,procGPA}
+\seealso{procOPA,procGPA,riemdist}
 \examples{
 data(gorf.dat)
 data(gorm.dat)
