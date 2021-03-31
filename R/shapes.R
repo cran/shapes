@@ -3,14 +3,304 @@
 # Statistical shape analysis routines
 # written by Ian Dryden in R  (see http://cran.r-project.org)
 # (c) Ian Dryden
-#     University of Nottingham. version 1.2.5
-#                    2003-2019
+#     University of Nottingham. version 1.2.6
+#                    2003-2021
 #
 # Includes contributions by many other authors, including
 #   Mohammad Faghihi, Kwang-Rae Kim, Alfred Kume,
 #   Gregorio Quintana-Orti, Amelia Simo.
 #
 ###########################################################################
+
+
+
+tangentcoords.partial.inv = function(v, p, R)
+{
+  return(matrix(sqrt(1 - sum(v^2)) * c(p) + v, nrow = nrow(p)) %*% t(R))
+}
+
+preshape2shape = function(z)
+{
+  k = nrow(z) + 1
+  H = defh(k - 1)
+  return(t(H) %*% z)
+}
+
+
+plot3darcs<-function(x,pcno=1,c=1,nn=100,boundary.data=TRUE,view.theta=0,view.phi=0,type="pnss"){
+  # points along principal arcs
+  pns.out <- x
+  k<-pns.out$GPAout$k
+  m<-pns.out$GPAout$m
+  n.pc<-dim(pns.out$resmat)[1]
+  npts = 100
+  arc1 = t(get.prinarc(resmat = pns.out$resmat, PNS = pns.out$PNS, arc = 1, n = npts, boundary.data = boundary.data))
+  arc2 = t(get.prinarc(resmat = pns.out$resmat, PNS = pns.out$PNS, arc = 2, n = npts, boundary.data = boundary.data))
+  arc3 = t(get.prinarc(resmat = pns.out$resmat, PNS = pns.out$PNS, arc = 3, n = npts, boundary.data = boundary.data))
+  # PNS mean
+  PNSmean = pns.out$PNS$mean
+  GPAout = pns.out$GPAout
+  
+  # c * sd : lower and upper along principal arcs. lower -> 0 -> upper
+  # total 2 * nn + 1 configurations
+  #    : nn configurations from negative to 0
+  #      1 configuration at 0
+  #      nn configurations from 0 to positive
+  #default c = 1
+  {
+    cat("stdev of PNS1 score:", round(sd(pns.out$resmat[ 1, ]), 4), "\n")
+    cat("stdev of PNS2 score:", round(sd(pns.out$resmat[ 2, ]), 4), "\n")
+    cat("stdev of PNS3 score:", round(sd(pns.out$resmat[ 3, ]), 4), "\n")
+  }
+  rng = c * sd(pns.out$resmat[1,])
+  val = c(seq(-rng, 0, length = nn + 1)[-(nn + 1)],
+          0,
+          seq(0, rng, length = nn + 1)[-1])
+  lu.arc1 = t(get.prinarc.value(PNS = pns.out$PNS, arc = 1, res = val))
+  rng = c * sd(pns.out$resmat[2,])
+  val = c(seq(-rng, 0, length = nn + 1)[-(nn + 1)],
+          0,
+          seq(0, rng, length = nn + 1)[-1])
+  lu.arc2 = t(get.prinarc.value(PNS = pns.out$PNS, arc = 2, res = val))
+  rng = c * sd(pns.out$resmat[3,])
+  val = c(seq(-rng, 0, length = nn + 1)[-(nn + 1)],
+          0,
+          seq(0, rng, length = nn + 1)[-1])
+  lu.arc3 = t(get.prinarc.value(PNS = pns.out$PNS, arc = 3, res = val))
+  # spherical data to PC scores
+  scores.arc1 = sphere2pcscore(x = arc1)
+  scores.arc2 = sphere2pcscore(x = arc2)
+  scores.arc3 = sphere2pcscore(x = arc3)
+  scores.PNSmean = sphere2pcscore(x = t(PNSmean))
+  scores.lu.arc1 = sphere2pcscore(x = lu.arc1)
+  scores.lu.arc2 = sphere2pcscore(x = lu.arc2)
+  scores.lu.arc3 = sphere2pcscore(x = lu.arc3)
+  # PC scores to tangent coordinates
+  U1 = matrix(0, npts, ncol(GPAout$pcar))
+  U2 = matrix(0, npts, ncol(GPAout$pcar))
+  U3 = matrix(0, npts, ncol(GPAout$pcar))
+  for (i in 1:npts)
+  {
+    for (j in 1:n.pc)
+    {
+      U1[i, ] = U1[i, ] + scores.arc1[i, j] * GPAout$pcar[ , j]
+      U2[i, ] = U2[i, ] + scores.arc2[i, j] * GPAout$pcar[ , j]
+      U3[i, ] = U3[i, ] + scores.arc3[i, j] * GPAout$pcar[ , j]
+    }
+  }
+  U.mean = matrix(0, 1, ncol(GPAout$pcar))
+  for (j in 1:n.pc)
+  {
+    U.mean = U.mean + scores.PNSmean[j] * GPAout$pcar[ , j]
+  }
+  tan.lu.arc1 = matrix(0, nrow(lu.arc1), ncol(GPAout$pcar))
+  tan.lu.arc2 = matrix(0, nrow(lu.arc2), ncol(GPAout$pcar))
+  tan.lu.arc3 = matrix(0, nrow(lu.arc3), ncol(GPAout$pcar))
+  for (i in 1:nrow(lu.arc1))
+  {
+    for (j in 1:n.pc)
+    {
+      tan.lu.arc1[i, ] = tan.lu.arc1[i, ] + scores.lu.arc1[i, j] * GPAout$pcar[ , j]
+      tan.lu.arc2[i, ] = tan.lu.arc2[i, ] + scores.lu.arc2[i, j] * GPAout$pcar[ , j]
+      tan.lu.arc3[i, ] = tan.lu.arc3[i, ] + scores.lu.arc3[i, j] * GPAout$pcar[ , j]
+    }
+  }
+  # tangent coordinates to preshapes
+  # preshapes to shapes
+  shapes.arc1 = array(NA, c(k, m, npts))
+  shapes.arc2 = array(NA, c(k, m, npts))
+  shapes.arc3 = array(NA, c(k, m, npts))
+  H = defh(k - 1)
+  for (i in 1:npts)
+  {
+    shapes.arc1[ , , i] = preshape2shape(tangentcoords.partial.inv(v = U1[i, ], p = H %*% GPAout$mshape, R = diag(m)))
+    shapes.arc2[ , , i] = preshape2shape(tangentcoords.partial.inv(v = U2[i, ], p = H %*% GPAout$mshape, R = diag(m)))
+    shapes.arc3[ , , i] = preshape2shape(tangentcoords.partial.inv(v = U3[i, ], p = H %*% GPAout$mshape, R = diag(m)))
+  }
+  shapes.PNSmean = preshape2shape(tangentcoords.partial.inv(v = U.mean, p = H %*% GPAout$mshape, R = diag(m)))
+  shapes.lu.arc1 = array(NA, c(k, m, nrow(lu.arc1)))
+  shapes.lu.arc2 = array(NA, c(k, m, nrow(lu.arc2)))
+  shapes.lu.arc3 = array(NA, c(k, m, nrow(lu.arc3)))
+  for (i in 1:nrow(lu.arc1))
+  {
+    shapes.lu.arc1[ , , i] = preshape2shape(tangentcoords.partial.inv(v = tan.lu.arc1[i, ], p = H %*% GPAout$mshape, R = diag(m)))
+    shapes.lu.arc2[ , , i] = preshape2shape(tangentcoords.partial.inv(v = tan.lu.arc2[i, ], p = H %*% GPAout$mshape, R = diag(m)))
+    shapes.lu.arc3[ , , i] = preshape2shape(tangentcoords.partial.inv(v = tan.lu.arc3[i, ], p = H %*% GPAout$mshape, R = diag(m)))
+  }
+  
+  
+  #convert PCs to configuration space if not already in place 
+  h <- defh(k - 1)
+  zero <- matrix(0, k - 1, k)
+  H <- cbind(h, zero, zero)
+  H1 <- cbind(zero, h, zero)
+  H2 <- cbind(zero, zero, h)
+  H <- rbind(H, H1, H2)
+  if (dim(GPAout$pcar)[1] == (3 * (k - 1))) {
+    pcarot <- (t(H) %*% GPAout$pcar)
+    GPAout$pcar <- pcarot
+  }
+  
+  
+  #------------------------#
+  #                        #
+  # PLOT TYPE I            #
+  #    : full plot         #
+  #                        #
+  #------------------------#
+ 
+  
+   
+   if (pcno==1){ 
+     shapes.lu.arc<-shapes.lu.arc1
+   }
+   if (pcno==2){ 
+     shapes.lu.arc<-shapes.lu.arc2
+   }
+   if (pcno==3){ 
+     shapes.lu.arc<-shapes.lu.arc3
+   }
+
+   if (type=="pca"){ 
+     open3d()
+     par3d(windowRect = c(20, 30, 800, 800))
+     view3d(view.theta,view.phi)
+     
+    # GPA mean + PC
+    plot3d(GPAout$mshape, type = "s", col = rainbow(k), size = 1, add = TRUE)
+    lines3d(GPAout$mshape, col = rainbow(k), lwd = 5)
+    pcu <- GPAout$mshape + c  * GPAout$pcasd[pcno] * 
+      cbind(GPAout$pcar[1:k, pcno], GPAout$pcar[(k + 1):(2 * 
+                                                    k), pcno], GPAout$pcar[(2 * k + 1):(3 * k), pcno])
+    pcl <- GPAout$mshape - c  * GPAout$pcasd[pcno] * 
+      cbind(GPAout$pcar[1:k, pcno], GPAout$pcar[(k + 1):(2 * 
+                                                    k), pcno], GPAout$pcar[(2 * k + 1):(3 * k), pcno])   
+                                                       
+    spheres3d( pcu, radius = 0.004, color = "black")
+    spheres3d( pcl, radius = 0.004, color = "grey")
+    for (j in 1:k) {
+      lines3d(rbind(pcl[j, ], pcu[j, ]), col = rainbow(k)[j] )
+    if (j>1){
+      lines3d(rbind(pcu[j-1, ],pcu[j, ])  ,col="black" )
+      lines3d(rbind(pcl[j-1, ],pcl[j, ])  ,col="grey" )
+    }
+    }
+  }
+    
+    if (type=="pnss"){
+ open3d()
+      par3d(windowRect = c(20, 30, 800, 800))
+ view3d(view.theta,view.phi)
+ 
+    # principal arcs in landmark space
+ 
+    # PNS mean in landmark space
+    plot3d(shapes.PNSmean, type = "s", col = rainbow(k), size = 1.3, add = TRUE)
+    lines3d(shapes.PNSmean,lwd=5,col=rainbow(k))
+  
+    
+    # lower and upper
+    for (i in 1:k)
+    {
+      lines3d(t(shapes.lu.arc[i, , ]), col = rainbow(k)[i], lwd = 1,lty=2)
+      # farthest negative from 0
+      spheres3d(head(t(shapes.lu.arc[i, , ]), 1), radius = 0.004, color = "black")
+      if (i>1){
+        lines3d( (shapes.lu.arc[(i-1):i,,1]) ,col="black" )
+      }
+      
+      #   # farthest positive from 0
+      spheres3d(tail(t(shapes.lu.arc[i, , ]), 1), radius = 0.004, color = "grey")
+      if (i>1){
+        lines3d( (shapes.lu.arc[(i-1):i,,201]) ,col="grey" )
+      }
+      
+    }
+    }
+  
+  
+  out<-list(PNSmean=0,lu.arc=0)
+  out$PNSmean<-shapes.PNSmean
+  out$lu.arc<-shapes.lu.arc
+  out
+}
+
+########
+pnss3d<-
+function (x, sphere.type = "seq.test", alpha = 0.1, R = 100, 
+          nlast.small.sphere = 0, n.pc = 3) 
+{
+  k = dim(x)[1]
+m = dim(x)[2]
+n = dim(x)[3]
+  if (n.pc =="Full" ) {
+    n.pc=m*k-m*(m-1)/2-m
+  }
+  if (m==2){
+    tem1 <- array( 0, c(k,3,n) )
+    tem1[,1:2,]<-x
+    x<-tem1
+    m<-3
+  }
+
+if (n < ((k - 1) * m)) {
+  print("Note: n < (k - 1) * m.")
+  jj<- round( (k-1)*m/n + 0.5)
+  print("Adding extra copies of the data")
+  tem<- array(0,c(k,m,jj*n))
+  tem[,,1:n]<-x
+  for (i in 2:jj){
+    for (j in 1:n){
+    tem[,,(i-1)*n+ j ]<-x[,,j] + 0*matrix( rnorm(k*m), k,m)
+    }
+  }
+  x<-tem
+}
+k = dim(x)[1]
+m = dim(x)[2]
+n = dim(x)[3]
+
+  
+  out = pc2sphere2(x = x, n.pc = n.pc)
+  spheredata = t(out$spheredata)
+  GPAout = out$GPAout
+  pns.out = pns(x = spheredata, sphere.type = sphere.type, 
+                alpha = alpha, R = R, nlast.small.sphere = nlast.small.sphere)
+  print("Radii of spheres")
+  print(pns.out$PNS$radii)
+  pns.out$percent = pns.out$percent * sum(GPAout$percent[1:n.pc])/100
+  pns.out$GPAout = GPAout
+  pns.out$spheredata = spheredata
+  return(pns.out)
+}
+
+pc2sphere2<-function (x, n.pc) 
+{
+  k = dim(x)[1]
+  m = dim(x)[2]
+  n = dim(x)[3]
+  
+
+  GPAout = procGPA(x = x, scale = TRUE, reflect = FALSE, tol1=1e-5,tangentcoords = "partial", 
+                   distances = FALSE)
+  cat("First ", n.pc, " principal components explain ", round(sum(GPAout$percent[1:n.pc])), 
+      "% of total variance. \n", sep = "")
+  H = defh(k - 1)
+  X.hat = H %*% GPAout$mshape
+  S = array(NA, c(k - 1, m, n))
+  for (i in 1:n) {
+    S[, , i] = H %*% GPAout$rotated[, , i]
+  }
+  T.c = GPAout$tan - apply(GPAout$tan, 1, mean)
+  out = pcscore2sphere(n.pc = n.pc, X.hat = X.hat, S = S, Tan = T.c, 
+                       V = GPAout$pcar)
+  return(list(spheredata = out, GPAout = GPAout))
+}
+
+
+
+
+
 
 
 #==================================================================================

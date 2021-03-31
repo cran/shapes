@@ -18,4 +18,5 @@ importFrom("stats", "cmdscale", "cor", "cov", "nlm", "pchisq", "pf",
   importFrom("graphics", "abline", "legend")
   importFrom("stats", "coef", "princomp", "rbeta", "runif")
   importFrom("utils", "tail")
-
+  importFrom("grDevices", "rainbow")
+  importFrom("utils", "head")

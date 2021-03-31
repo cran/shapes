@@ -41,13 +41,12 @@ sphere.type = "bi.sphere".}
 \item{percent}{proportion of variances explained.}
 }
 \references{
-Dryden, I.L., Kim, K. and Le, H. (2018). Principal nested shape spaces, with applications to molecular dynamics data.
-Technical report. 
+Dryden, I.L., Kim, K., Laughton, C.A. and Le, H. (2019). Principal nested shape space analysis of molecular dynamics data. Annals of Applied Statistics, 13, 2213-2234.
 
 Jung, S., Dryden, I.L. and Marron, J.S. (2012). Analysis of principal nested spheres. Biometrika, 99, 551-568.
 }
 \author{Kwang-Rae Kim: R translation of Sungkyu Jung's matlab code}
-\seealso{pns4pc}
+\seealso{pns4pc, pnss3d}
 
 \examples{
 

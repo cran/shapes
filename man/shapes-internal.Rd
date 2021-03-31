@@ -1,4 +1,7 @@
 \name{shapes-internal}
+\alias{pc2sphere2} 
+\alias{preshape2shape}
+\alias{tangentcoords.partial.inv}
 \alias{multiply_by_transpose_of_helmert_implicitly} 
 \alias{multiply_by_helmert_implicitly_3d}
 \alias{uji3_centroid.size}

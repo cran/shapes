@@ -1,3 +1,7 @@
+1.2.6
+
+Added in pnss3d and plot3darcs for displaying the PNSS modes of variation
+
 1.2.5
 
 Corrected bug in estcov for method="Power" when exit occurred in some zero

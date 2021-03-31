@@ -1,10 +1,10 @@
-\name{pns4pc}
-\alias{pns4pc}
-\title{Principal Nested Shape Spaces from PCA}
-\description{Approximation of Principal Nested Shapes Spaces using PCA
+\name{pnss3d}
+\alias{pnss3d}
+\title{Principal Nested Shape Space Analysis}
+\description{Approximation of Principal Nested Shapes Spaces using PCA: 2D or 3D data, small or large samples
 }
 \usage{
-pns4pc(x, sphere.type = "seq.test", alpha = 0.1, R = 100, nlast.small.sphere = 0,n.pc=2)
+pnss3d(x, sphere.type = "seq.test", alpha = 0.1, R = 100, nlast.small.sphere = 0,n.pc=3)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -40,13 +40,13 @@ Dryden, I.L., Kim, K., Laughton, C.A. and Le, H. (2019). Principal nested shape 
 
 Jung, S., Dryden, I.L. and Marron, J.S. (2012). Analysis of principal nested spheres. Biometrika, 99, 551-568.
 }
-\author{Kwang-Rae Kim}
-\seealso{pns, pns4pc, pnss3d, plot3darcs}
+\author{Kwang-Rae Kim, Ian Dryden}
+\seealso{pns, pns4pc, plot3darcs}
 
 \examples{
-
-pns4pc(digit3.dat,n.pc=2)
-
+ans <- pnss3d(digit3.dat, sphere.type="BIC", n.pc=5)
+#aa <- plot3darcs(ans,c=2,pcno=1)
+#bb <- plot3darcs(ans,c=2,pcno=1,type="pca")
 }
 
 
