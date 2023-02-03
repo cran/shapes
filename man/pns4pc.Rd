@@ -4,7 +4,7 @@
 \description{Approximation of Principal Nested Shapes Spaces using PCA
 }
 \usage{
-pns4pc(x, sphere.type = "seq.test", alpha = 0.1, R = 100, nlast.small.sphere = 0,n.pc=2)
+pns4pc(x, sphere.type = "seq.test", alpha = 0.1, R = 100, nlast.small.sphere = 1,n.pc=2)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{

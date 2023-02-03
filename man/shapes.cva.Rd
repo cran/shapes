@@ -5,7 +5,7 @@
 \description{Carry out canonical variate analysis for shapes (in two or more groups)    
 }
 \usage{
-shapes.cva(X,groups,scale=TRUE,ncv=2)
+shapes.cva(X,groups,scale=TRUE,tangentcoords = "residual",ncv=2)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -15,6 +15,7 @@ is the number of dimensions, and n is the sample size. }
   \item{groups}{The group labels}      
   \item{scale}{Logical, indicating if Procrustes 
 scaling should be carried out}
+  \item{tangentcoords}{The type of Procrustes tangent coordinates to use (as for procGPA)}
  \item{ncv}{Number of canonical variates to display}
 }
 \value{A plot if ncv=2 or 3 and the Canonical Variate Scores} 
